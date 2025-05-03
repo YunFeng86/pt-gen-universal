@@ -4,9 +4,9 @@
     "description": "PT-Gen on Cloudflare Worker",
     "main": "index.js",
     "scripts": {
-        "build": "npx wrangler build",
-        "preview": "npx wrangler preview",
-        "publish": "npx wrangler publish"
+        "build": "wrangler build",
+        "preview": "wrangler preview",
+        "publish": "wrangler publish"
     },
     "author": "Rhilip <rhilipruan@gmail.com>",
     "license": "MIT",
@@ -15,8 +15,7 @@
         "html2bbcode": "https://registry.npmjs.org/html2bbcode/-/html2bbcode-1.2.6.tgz"
     },
     "devDependencies": {
-        "html-loader": "^1.3.2",
-        "wrangler": "^2.0.0"
+        "html-loader": "^1.3.2"
     },
     "publishConfig": {
         "registry": "https://registry.npmjs.org/"
