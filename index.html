@@ -14,16 +14,241 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@3.3.7/dist/css/bootstrap.min.css" integrity="sha256-916EbMg70RQy9LHiGkXzG8hSg9EdNy97GazNG/aiY1w=" crossorigin="anonymous">
 
     <style type="text/css">
-        body{padding-top:50px}
-        .navbar-fixed-top{border:0}
-        .main{padding:20px;margin-top:0}
-        @media (min-width:768px){.main{padding-right:40px;padding-left:40px}}
-        .zero-clipboard{position:relative}
-        .btn-clipboard{position:absolute;top:8px;right:21px;z-index:10;display:block;padding:5px 8px;font-size:12px;color:#767676;cursor:pointer;background-color:#fff;border:1px solid #e1e1e8;border-radius:0 4px 0 4px}
-        ul.timeline{list-style-type:none;position:relative}
-        ul.timeline:before{content:' ';background:#d4d9df;display:inline-block;position:absolute;left:29px;width:2px;height:100%;z-index:400}
-        ul.timeline>li{margin:20px 0;padding-left:20px}
-        ul.timeline>li:before{content:' ';background:white;display:inline-block;position:absolute;border-radius:50%;border:3px solid #22c0e8;left:20px;width:20px;height:20px;z-index:400}
+        body {
+            padding-top: 50px;
+            background-color: #f5f5f5;
+        }
+
+        .navbar-fixed-top {
+            border: 0;
+            background-color: #2c3e50;
+        }
+
+        .navbar-brand {
+            font-weight: 500;
+        }
+
+        .main {
+            padding: 20px;
+            margin-top: 0;
+        }
+
+        @media (min-width: 768px) {
+            .main {
+                padding-right: 40px;
+                padding-left: 40px;
+            }
+        }
+
+        .form-inline {
+            background: white;
+            padding: 20px;
+            border-radius: 4px 4px 0 0;
+            border: 1px solid #ddd;
+            border-bottom: none;
+        }
+
+        .form-control {
+            border-radius: 4px;
+            border: 1px solid #ccc;
+            transition: border-color 0.15s ease-in-out;
+        }
+
+        .form-control:focus {
+            border-color: #5cb85c;
+            box-shadow: 0 0 0 2px rgba(92, 184, 92, 0.1);
+        }
+
+        #input_value {
+            min-width: 300px;
+        }
+
+        @media (min-width: 768px) {
+            #input_value {
+                width: 480px !important;
+            }
+        }
+
+        .btn {
+            border-radius: 4px;
+            transition: all 0.2s ease;
+        }
+
+        .btn-success:hover {
+            background-color: #449d44;
+        }
+
+        .btn-success:disabled {
+            opacity: 0.65;
+            cursor: not-allowed;
+        }
+
+        .zero-clipboard {
+            background: white;
+            padding: 20px;
+            border-radius: 0 0 4px 4px;
+            border: 1px solid #ddd;
+            border-top: none;
+        }
+
+        .section-divider {
+            background: white;
+            border-left: 1px solid #ddd;
+            border-right: 1px solid #ddd;
+            padding: 15px 20px;
+            margin: 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .section-divider h4 {
+            margin: 0;
+            font-size: 16px;
+            font-weight: 500;
+            color: #333;
+        }
+
+        .btn-clipboard {
+            padding: 6px 12px;
+            font-size: 14px;
+            border-radius: 4px;
+            transition: all 0.2s ease;
+        }
+
+        #movie_info {
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+            font-size: 13px;
+            line-height: 1.5;
+            resize: vertical;
+        }
+
+        #movie_info:focus {
+            border-color: #5cb85c;
+            outline: 0;
+            box-shadow: 0 0 0 2px rgba(92, 184, 92, 0.1);
+        }
+
+        .table {
+            background: white;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+            margin-bottom: 20px;
+        }
+
+        .table thead {
+            background-color: #337ab7;
+            color: white;
+        }
+
+        .table thead th {
+            border-bottom: 2px solid #2e6da4;
+            font-weight: 500;
+        }
+
+        .table tbody tr:hover {
+            background-color: #f5f5f5;
+        }
+
+        .table a {
+            color: #337ab7;
+            text-decoration: none;
+        }
+
+        .table a:hover {
+            color: #23527c;
+            text-decoration: underline;
+        }
+
+        .gen-search-choose {
+            padding: 4px 12px;
+            font-size: 13px;
+            color: white;
+            background-color: #5cb85c;
+            border: 1px solid #4cae4c;
+            border-radius: 4px;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .gen-search-choose:hover {
+            background-color: #449d44;
+            color: white;
+            text-decoration: none;
+        }
+
+        #gen_replace {
+            background: white;
+            padding: 20px;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+            margin-top: 20px;
+        }
+
+        #gen_replace h4 {
+            margin-top: 0;
+            margin-bottom: 15px;
+            font-weight: 500;
+        }
+
+        #gen_replace code {
+            background-color: #f5f5f5;
+            padding: 2px 6px;
+            border-radius: 3px;
+            color: #c7254e;
+            font-size: 90%;
+        }
+
+        hr {
+            border-top: 1px solid #ddd;
+            margin: 20px 0;
+        }
+
+        ul.timeline {
+            list-style-type: none;
+            position: relative;
+        }
+
+        ul.timeline:before {
+            content: ' ';
+            background: #d4d9df;
+            display: inline-block;
+            position: absolute;
+            left: 29px;
+            width: 2px;
+            height: 100%;
+            z-index: 400;
+        }
+
+        ul.timeline > li {
+            margin: 20px 0;
+            padding-left: 20px;
+        }
+
+        ul.timeline > li:before {
+            content: ' ';
+            background: white;
+            display: inline-block;
+            position: absolute;
+            border-radius: 50%;
+            border: 3px solid #337ab7;
+            left: 20px;
+            width: 20px;
+            height: 20px;
+            z-index: 400;
+        }
+
+        @media (max-width: 767px) {
+            .form-inline .form-group {
+                margin-bottom: 10px;
+            }
+
+            #input_value {
+                width: 100% !important;
+            }
+        }
     </style>
 
     <!--[if lt IE 9]>
@@ -76,14 +301,16 @@
                     </div>
                     <button class="btn btn-success" id="query_btn">查询</button>
                 </div>
-            </div>
-            <hr>
-            <div id="gen_help" style="display: none"></div>
-            <div id="gen_out">
-                <div class="zero-clipboard">
-                    <button class="btn btn-clipboard" data-clipboard-target="#movie_info">复制</button>
+                <div id="gen_help" style="display: none"></div>
+                <div class="section-divider">
+                    <h4>生成结果</h4>
+                    <button class="btn btn-success btn-clipboard" data-clipboard-target="#movie_info">复制</button>
                 </div>
-                <textarea class="form-control" rows="22" id="movie_info"></textarea>
+                <div id="gen_out">
+                    <div class="zero-clipboard">
+                        <textarea class="form-control" rows="22" id="movie_info"></textarea>
+                    </div>
+                </div>
             </div>
             <hr>
             <div id="gen_replace">
