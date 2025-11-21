@@ -14,18 +14,93 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@3.3.7/dist/css/bootstrap.min.css" integrity="sha256-916EbMg70RQy9LHiGkXzG8hSg9EdNy97GazNG/aiY1w=" crossorigin="anonymous">
 
     <style type="text/css">
+        :root {
+            --bg-primary: #f5f5f5;
+            --bg-secondary: #ffffff;
+            --bg-navbar: #2c3e50;
+            --text-primary: #333333;
+            --text-secondary: #767676;
+            --border-color: #dddddd;
+            --border-light: #cccccc;
+            --input-bg: #ffffff;
+            --shadow-color: rgba(0, 0, 0, 0.1);
+        }
+
+        [data-theme="dark"] {
+            --bg-primary: #1a1a1a;
+            --bg-secondary: #2d2d2d;
+            --bg-navbar: #1a1a1a;
+            --text-primary: #e0e0e0;
+            --text-secondary: #a0a0a0;
+            --border-color: #404040;
+            --border-light: #505050;
+            --input-bg: #2d2d2d;
+            --shadow-color: rgba(0, 0, 0, 0.3);
+        }
+
         body {
             padding-top: 50px;
-            background-color: #f5f5f5;
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            transition: background-color 0.3s ease, color 0.3s ease;
         }
 
         .navbar-fixed-top {
             border: 0;
-            background-color: #2c3e50;
+            background-color: var(--bg-navbar);
+            transition: background-color 0.3s ease;
         }
 
         .navbar-brand {
             font-weight: 500;
+            color: #ffffff !important;
+        }
+
+        .navbar-right {
+            margin-right: 50px;
+        }
+
+        .theme-toggle {
+            position: fixed;
+            right: 15px;
+            top: 8px;
+            background: transparent;
+            border: none;
+            color: #ffffff;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+            padding: 0;
+            z-index: 1050;
+        }
+
+        .theme-toggle:hover {
+            background: rgba(255, 255, 255, 0.15);
+            transform: scale(1.1);
+        }
+
+        .theme-toggle:active {
+            transform: scale(0.95);
+        }
+
+        @media (max-width: 767px) {
+            .navbar-right {
+                margin-right: 0;
+            }
+
+            .theme-toggle {
+                right: 10px;
+                top: 7px;
+                width: 32px;
+                height: 32px;
+                font-size: 16px;
+            }
         }
 
         .main {
@@ -41,17 +116,20 @@
         }
 
         .form-inline {
-            background: white;
+            background: var(--bg-secondary);
             padding: 20px;
             border-radius: 4px 4px 0 0;
-            border: 1px solid #ddd;
+            border: 1px solid var(--border-color);
             border-bottom: none;
+            transition: background-color 0.3s ease, border-color 0.3s ease;
         }
 
         .form-control {
             border-radius: 4px;
-            border: 1px solid #ccc;
-            transition: border-color 0.15s ease-in-out;
+            border: 1px solid var(--border-light);
+            background-color: var(--input-bg);
+            color: var(--text-primary);
+            transition: all 0.3s ease;
         }
 
         .form-control:focus {
@@ -84,29 +162,32 @@
         }
 
         .zero-clipboard {
-            background: white;
+            background: var(--bg-secondary);
             padding: 20px;
             border-radius: 0 0 4px 4px;
-            border: 1px solid #ddd;
+            border: 1px solid var(--border-color);
             border-top: none;
+            transition: background-color 0.3s ease, border-color 0.3s ease;
         }
 
         .section-divider {
-            background: white;
-            border-left: 1px solid #ddd;
-            border-right: 1px solid #ddd;
+            background: var(--bg-secondary);
+            border-left: 1px solid var(--border-color);
+            border-right: 1px solid var(--border-color);
             padding: 15px 20px;
             margin: 0;
             display: flex;
             justify-content: space-between;
             align-items: center;
+            transition: background-color 0.3s ease, border-color 0.3s ease;
         }
 
         .section-divider h4 {
             margin: 0;
             font-size: 16px;
             font-weight: 500;
-            color: #333;
+            color: var(--text-primary);
+            transition: color 0.3s ease;
         }
 
         .btn-clipboard {
@@ -117,12 +198,15 @@
         }
 
         #movie_info {
-            border: 1px solid #ccc;
+            border: 1px solid var(--border-light);
             border-radius: 4px;
             font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
             font-size: 13px;
             line-height: 1.5;
             resize: vertical;
+            background-color: var(--input-bg);
+            color: var(--text-primary);
+            transition: all 0.3s ease;
         }
 
         #movie_info:focus {
@@ -132,10 +216,11 @@
         }
 
         .table {
-            background: white;
+            background: var(--bg-secondary);
             border-radius: 4px;
-            border: 1px solid #ddd;
+            border: 1px solid var(--border-color);
             margin-bottom: 20px;
+            transition: background-color 0.3s ease, border-color 0.3s ease;
         }
 
         .table thead {
@@ -180,30 +265,35 @@
         }
 
         #gen_replace {
-            background: white;
+            background: var(--bg-secondary);
             padding: 20px;
             border-radius: 4px;
-            border: 1px solid #ddd;
+            border: 1px solid var(--border-color);
             margin-top: 20px;
+            transition: background-color 0.3s ease, border-color 0.3s ease;
         }
 
         #gen_replace h4 {
             margin-top: 0;
             margin-bottom: 15px;
             font-weight: 500;
+            color: var(--text-primary);
+            transition: color 0.3s ease;
         }
 
         #gen_replace code {
-            background-color: #f5f5f5;
+            background-color: var(--bg-primary);
             padding: 2px 6px;
             border-radius: 3px;
-            color: #c7254e;
+            color: #5cb85c;
             font-size: 90%;
+            transition: all 0.3s ease;
         }
 
         hr {
-            border-top: 1px solid #ddd;
+            border-top: 1px solid var(--border-color);
             margin: 20px 0;
+            transition: border-color 0.3s ease;
         }
 
         ul.timeline {
@@ -260,6 +350,9 @@
 <body>
 <nav class="navbar navbar-inverse navbar-fixed-top">
     <div class="container-fluid">
+        <button class="theme-toggle" id="theme-toggle" title="切换主题">
+            <span id="theme-icon" class="glyphicon glyphicon-adjust"></span>
+        </button>
         <div class="navbar-header">
             <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar"
                     aria-expanded="false" aria-controls="navbar">
@@ -332,6 +425,54 @@
 <script src="https://cdn.jsdelivr.net/npm/clipboard@2.0.0/dist/clipboard.min.js" integrity="sha256-meF2HJJ2Tcruwz3z4XcxYDRMxKprjdruBHc3InmixCQ=" crossorigin="anonymous"></script>
 <script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
 <script>
+  // 主题切换相关
+  (function() {
+    const themeToggle = document.getElementById('theme-toggle');
+    const themeIcon = document.getElementById('theme-icon');
+    const html = document.documentElement;
+
+    // 检测系统主题偏好
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)');
+
+    // 从 localStorage 获取保存的主题，如果没有则使用系统偏好
+    function getInitialTheme() {
+      const savedTheme = localStorage.getItem('theme');
+      if (savedTheme) {
+        return savedTheme;
+      }
+      return prefersDark.matches ? 'dark' : 'light';
+    }
+
+    // 应用主题
+    function applyTheme(theme) {
+      if (theme === 'dark') {
+        html.setAttribute('data-theme', 'dark');
+        themeIcon.className = 'glyphicon glyphicon-sunglasses';
+      } else {
+        html.removeAttribute('data-theme');
+        themeIcon.className = 'glyphicon glyphicon-adjust';
+      }
+      localStorage.setItem('theme', theme);
+    }
+
+    // 初始化主题
+    applyTheme(getInitialTheme());
+
+    // 切换主题
+    themeToggle.addEventListener('click', function() {
+      const currentTheme = html.getAttribute('data-theme');
+      const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+      applyTheme(newTheme);
+    });
+
+    // 监听系统主题变化（仅当用户未手动设置时）
+    prefersDark.addEventListener('change', function(e) {
+      if (!localStorage.getItem('theme')) {
+        applyTheme(e.matches ? 'dark' : 'light');
+      }
+    });
+  })();
+
   // 脚本查询相关
   $(function () {
     let query_btn = $("#query_btn");
