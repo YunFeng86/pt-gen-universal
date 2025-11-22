@@ -1,9 +1,0 @@
-name = "ptgen"
-type = "webpack"
-webpack_config = "webpack.config.js"
-workers_dev = true
-account_id = "CF_ACCOUNT_ID"
-vars = { }
-kv_namespaces = [
-  { binding = "PT_GEN_STORE", id = "" }
-]

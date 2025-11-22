@@ -1,0 +1,18 @@
+name = "pt-gen-universal"
+main = "src/adapters/cloudflare.js"
+compatibility_date = "2025-05-04"
+
+# KV 命名空间配置
+# 部署时会自动创建，或者手动在 Cloudflare Dashboard 创建后填入 ID
+kv_namespaces = [
+  { binding = "PT_GEN_STORE", id = "" }
+]
+
+# 环境变量（可选）
+[vars]
+# DISABLE_SEARCH = "false"
+# CACHE_TTL = "172800"  # 缓存过期时间（秒），默认 172800（2天）
+
+# 日志配置
+[observability.logs]
+enabled = true

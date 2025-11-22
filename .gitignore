@@ -9,5 +9,6 @@ dist/
 node_modules/
 .cargo-ok
 .idea
-wrangler.toml
 .wrangler/
+.env
+.dev.vars
