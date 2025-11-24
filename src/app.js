@@ -1,6 +1,6 @@
 import { Hono } from 'hono'
 import { cors } from 'hono/cors'
-import { AUTHOR, makeJsonResponse } from '../lib/common.js'
+import { AUTHOR, VERSION } from '../lib/common.js'
 import debug_get_err from '../lib/error.js'
 
 import { search_douban, gen_douban } from '../lib/douban.js'
@@ -261,7 +261,7 @@ export function createApp(storage, config = {}) {
       error: body_update.error || null,
       format: body_update.format || '',
       copyright: `Powered by @${AUTHOR}`,
-      version: '0.6.4',
+      version: VERSION,
       generate_at: Date.now(),
       ...body_update
     }
