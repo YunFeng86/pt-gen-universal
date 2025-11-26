@@ -8,6 +8,7 @@ import { search_imdb, gen_imdb } from '../lib/imdb.js'
 import { search_bangumi, gen_bangumi } from '../lib/bangumi.js'
 import { gen_steam } from '../lib/steam.js'
 import { gen_indienova } from '../lib/indienova.js'
+import { gen_gog } from '../lib/gog.js'
 import { search_tmdb, gen_tmdb } from '../lib/tmdb.js'
 
 // 读取 HTML 页面（兼容 Node.js 和 CF Workers）
@@ -41,6 +42,7 @@ const support_list = {
   "bangumi": /(?:https?:\/\/)?(?:bgm\.tv|bangumi\.tv|chii\.in)\/subject\/(\d+)\/?/,
   "steam": /(?:https?:\/\/)?(?:store\.)?steam(?:powered|community)\.com\/app\/(\d+)\/?/,
   "indienova": /(?:https?:\/\/)?indienova\.com\/(?:game|g)\/(\S+)/,
+  "gog": /(?:https?:\/\/)?(?:www\.)?gog\.com\/(?:[a-z]{2}(?:-[A-Z]{2})?\/)?game\/([\w-]+)/,
   "tmdb": /(?:https?:\/\/)?(?:www\.)?themoviedb\.org\/(?:(movie|tv))\/(\d+)\/?/
 }
 
@@ -59,22 +61,23 @@ const support_list = {
 export function createApp(storage, config = {}) {
   const app = new Hono()
 
-  // 搜索处理器映射表（使用闭包传递 config）
+  // 搜索处理器映射表
   const searchHandlers = new Map([
-    ['douban', (q) => search_douban(q, config)],
-    ['imdb', (q) => search_imdb(q, config)],
-    ['bangumi', (q) => search_bangumi(q, config)],
-    ['tmdb', (q) => search_tmdb(q, config)]
+    ['douban', search_douban],
+    ['imdb', search_imdb],
+    ['bangumi', search_bangumi],
+    ['tmdb', search_tmdb]
   ])
 
-  // 信息生成处理器映射表（使用闭包传递 config）
+  // 信息生成处理器映射表
   const genHandlers = new Map([
-    ['douban', (sid) => gen_douban(sid, config)],
-    ['imdb', (sid) => gen_imdb(sid, config)],
-    ['bangumi', (sid) => gen_bangumi(sid, config)],
-    ['steam', (sid) => gen_steam(sid, config)],
-    ['indienova', (sid) => gen_indienova(sid, config)],
-    ['tmdb', (sid) => gen_tmdb(sid, config)]
+    ['douban', gen_douban],
+    ['imdb', gen_imdb],
+    ['bangumi', gen_bangumi],
+    ['steam', gen_steam],
+    ['indienova', gen_indienova],
+    ['gog', gen_gog],
+    ['tmdb', gen_tmdb]
   ])
 
   // 使用传入的 HTML 页面或默认的 page 变量
@@ -165,7 +168,7 @@ export function createApp(storage, config = {}) {
     }
 
     try {
-      const data = await handler(keywords)
+      const data = await handler(keywords, config)
       return c.json(makeJsonResponseData(data))
     } catch (e) {
       return handleError(c, e)
@@ -233,7 +236,7 @@ export function createApp(storage, config = {}) {
     }
 
     try {
-      const data = await handler(sid)
+      const data = await handler(sid, config)
       return c.json(makeJsonResponseData(data))
     } catch (e) {
       return handleError(c, e)
