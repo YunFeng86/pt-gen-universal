@@ -26,6 +26,8 @@
 
 ### 手动部署 Cloudflare Workers
 
+**环境要求：Node.js v18.0.0+**（Wrangler 支持 Node.js Current/Active/Maintenance 版本）
+
 ```bash
 # 克隆仓库
 git clone https://github.com/YunFeng86/pt-gen-universal.git
@@ -80,6 +82,8 @@ npm install dotenv
 ```
 
 ### Bun（高性能本地开发/VPS 部署）
+
+**环境要求：Bun v1.0.0+**
 
 ```bash
 # 克隆仓库

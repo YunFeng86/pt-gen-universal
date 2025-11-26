@@ -16,6 +16,10 @@
         "publish": "wrangler publish",
         "deploy": "wrangler deploy"
     },
+    "engines": {
+        "node": ">=20.6.0",
+        "bun": ">=1.0.0"
+    },
     "author": "YunFeng <YunFengZero@outlook.com>",
     "forkedFrom": "github.com/Rhilip/pt-gen-cfworker",
     "contributors": [
