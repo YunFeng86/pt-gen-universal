@@ -45,6 +45,8 @@ npm run deploy
 
 ### Node.js（本地开发/VPS 部署）
 
+**环境要求：Node.js v20.6.0+**（使用内置的 `--env-file` 支持）
+
 ```bash
 # 克隆仓库
 git clone https://github.com/YunFeng86/pt-gen-universal.git
@@ -65,6 +67,17 @@ npm run dev:node
 ```
 
 开发模式默认访问：`http://localhost:3000`
+
+**旧版本 Node.js（< v20.6.0）：**
+如果使用旧版本 Node.js，需要手动导出环境变量或使用 `dotenv` 包：
+```bash
+# 方式一：手动导出（Linux/macOS）
+export $(cat .env | xargs) && node src/adapters/node.js
+
+# 方式二：安装 dotenv 并修改代码
+npm install dotenv
+# 在 src/adapters/node.js 顶部添加：import 'dotenv/config'
+```
 
 ### Bun（高性能本地开发/VPS 部署）
 

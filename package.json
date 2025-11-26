@@ -7,10 +7,10 @@
     "scripts": {
         "dev:cf": "wrangler dev",
         "dev:bun": "bun --hot src/adapters/bun.js",
-        "dev:node": "node --watch src/adapters/node.js",
+        "dev:node": "node --env-file=.env --watch src/adapters/node.js",
         "build:cf": "wrangler deploy",
         "start:bun": "bun src/adapters/bun.js",
-        "start:node": "node src/adapters/node.js",
+        "start:node": "node --env-file=.env src/adapters/node.js",
         "build": "wrangler build",
         "preview": "wrangler preview",
         "publish": "wrangler publish",
