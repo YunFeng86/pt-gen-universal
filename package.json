@@ -14,7 +14,6 @@
         "build": "wrangler build",
         "preview": "wrangler preview",
         "publish": "wrangler publish",
-        "dev": "wrangler dev",
         "deploy": "wrangler deploy"
     },
     "author": "YunFeng <YunFengZero@outlook.com>",
