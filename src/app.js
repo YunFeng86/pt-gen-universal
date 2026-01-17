@@ -37,7 +37,7 @@ await loadHtmlPage()
 
 // 站点 URL 匹配规则
 const support_list = {
-  "douban": /(?:https?:\/\/)?(?:(?:movie|www)\.)?douban\.com\/(?:subject|movie)\/(\d+)\/?/,
+  "douban": /(?:https?:\/\/)?(?:(?:movie|www|m)\.)?douban\.com\/(?:(?:movie\/)?subject|movie)\/(\d+)\/?/,
   "imdb": /(?:https?:\/\/)?(?:www\.)?imdb\.com\/title\/(tt\d+)\/?/,
   "bangumi": /(?:https?:\/\/)?(?:bgm\.tv|bangumi\.tv|chii\.in)\/subject\/(\d+)\/?/,
   "steam": /(?:https?:\/\/)?(?:store\.)?steam(?:powered|community)\.com\/app\/(\d+)\/?/,
@@ -56,6 +56,12 @@ const support_list = {
  * @param {number} config.cacheTTL - 缓存过期时间（秒），默认 172800（2天）
  * @param {string} config.tmdbApiKey - TMDB API 密钥（可选）
  * @param {string} config.doubanCookie - 豆瓣 Cookie（可选）
+ * @param {number} config.doubanTimeoutMs - 豆瓣请求超时（毫秒，可选，默认 10000）
+ * @param {number} config.doubanWarmupTimeoutMs - 豆瓣 warmup 请求超时（毫秒，可选）
+ * @param {string} config.doubanUserAgent - 豆瓣请求 UA（可选）
+ * @param {string} config.doubanAcceptLanguage - 豆瓣请求语言（可选）
+ * @param {boolean} config.doubanIncludeAwards - 是否抓取获奖信息（可选，默认 true）
+ * @param {boolean} config.doubanIncludeImdb - 是否抓取 IMDb 评分（可选，默认 true）
  * @param {string} config.indienovaCookie - Indienova Cookie（可选）
  */
 export function createApp(storage, config = {}) {
