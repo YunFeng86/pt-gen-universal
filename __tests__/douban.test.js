@@ -2,8 +2,8 @@ import { describe, it, expect } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { parseDoubanSubjectHtml } from '../lib/douban.js'
 
-const desktopHtml = readFileSync(new URL('../douban.html', import.meta.url), 'utf-8')
-const mobileHtml = readFileSync(new URL('../douban_m.html', import.meta.url), 'utf-8')
+const desktopHtml = readFileSync(new URL('./fixtures/douban.html', import.meta.url), 'utf-8')
+const mobileHtml = readFileSync(new URL('./fixtures/douban_m.html', import.meta.url), 'utf-8')
 
 describe('Douban HTML parsing', () => {
   it('parses desktop HTML sample', () => {
