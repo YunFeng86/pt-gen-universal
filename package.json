@@ -32,7 +32,7 @@
     "dependencies": {
         "@hono/node-server": "^1.13.7",
         "cheerio": "^1.1.2",
-        "hono": "^4.10.6",
+        "hono": "^4.11.4",
         "html2bbcode": "^1.2.6"
     },
     "devDependencies": {
@@ -40,6 +40,7 @@
         "wrangler": "^4.14.1"
     },
     "overrides": {
-        "entities": "^7.0.0"
+        "entities": "^7.0.0",
+        "undici": "^7.18.2"
     }
 }
