@@ -14,7 +14,10 @@
         "build": "wrangler build",
         "preview": "wrangler preview",
         "publish": "wrangler publish",
-        "deploy": "wrangler deploy"
+        "deploy": "wrangler deploy",
+        "test": "vitest",
+        "test:ui": "vitest --ui",
+        "test:run": "vitest run"
     },
     "engines": {
         "node": ">=20.6.0",
@@ -33,6 +36,7 @@
         "html2bbcode": "^1.2.6"
     },
     "devDependencies": {
+        "vitest": "^4.0.17",
         "wrangler": "^4.14.1"
     },
     "overrides": {

@@ -132,6 +132,16 @@ export function createApp(storage, config = {}) {
     await next()
   })
 
+  // 生成缓存键（剔除认证参数，提高缓存共享率）
+  function generateCacheKey(c) {
+    const url = new URL(c.req.url)
+    // 移除认证相关参数
+    url.searchParams.delete('apikey')
+    url.searchParams.delete('debug')
+    // 使用规范化后的 URL 作为缓存键
+    return url.pathname + url.search
+  }
+
   // 缓存中间件（应用于所有 API 路由）
   app.use('/api/*', async (c, next) => {
     // 如果 cacheTTL 为 0，跳过缓存
@@ -139,11 +149,15 @@ export function createApp(storage, config = {}) {
       return next()
     }
 
-    const cacheKey = c.req.url
+    const cacheKey = generateCacheKey(c)
     const cached = await storage.get(cacheKey)
 
     if (cached) {
-      return c.json(JSON.parse(cached))
+      try {
+        return c.json(JSON.parse(cached))
+      } catch {
+        await storage.delete(cacheKey)
+      }
     }
 
     await next()
