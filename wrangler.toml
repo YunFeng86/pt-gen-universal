@@ -1,5 +1,5 @@
 name = "pt-gen-universal"
-main = "src/adapters/cloudflare.js"
+main = "src/adapters/cloudflare.ts"
 compatibility_date = "2025-05-04"
 
 # KV 命名空间配置

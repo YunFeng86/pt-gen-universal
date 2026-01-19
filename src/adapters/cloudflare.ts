@@ -1,5 +1,5 @@
-import { createApp } from '../app.js'
-import { CloudflareKVStorage } from '../storage/cloudflare.js'
+import { createApp } from '../app'
+import { CloudflareKVStorage } from '../storage/cloudflare'
 import page from '../../index.html'
 
 /**
@@ -7,10 +7,10 @@ import page from '../../index.html'
  */
 
 // 缓存应用实例（只初始化一次）
-let cachedApp = null
+let cachedApp: any = null
 
 export default {
-  async fetch(request, env, ctx) {
+  async fetch(request: Request, env: any, ctx: any) {
     if (!cachedApp) {
       const storage = new CloudflareKVStorage(env.PT_GEN_STORE)
       cachedApp = createApp(storage, {

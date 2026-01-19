@@ -23,6 +23,12 @@ export interface AppConfig {
     tmdbTimeoutMs?: number;
     tmdbUserAgent?: string;
 
+    // Worker Env Config
+    apikey?: string;
+    disableSearch?: boolean;
+    htmlPage?: string;
+    cacheTTL?: number;
+
     // 通用配置
     timeout?: number;
     proxyUrl?: string; // 可选的代理地址

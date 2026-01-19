@@ -1,2 +1,62 @@
 
+
 export const NONE_EXIST_ERROR = "查询失败，可能是资源不存在或者网站隐私设置。";
+
+export default function debug_get_err(err: any, request?: any) {
+    const errType = err.name || (err.constructor || {}).name;
+    const frames = parse_err(err);
+    const extraKeys = Object.keys(err).filter(key => !['name', 'message', 'stack'].includes(key));
+    return {
+        message: errType + ': ' + (err.message || '<no message>'),
+        exception: {
+            values: [
+                {
+                    type: errType,
+                    value: err.message,
+                    stacktrace: frames.length ? { frames: frames.reverse() } : undefined,
+                },
+            ],
+        },
+        extra: extraKeys.length
+            ? {
+                [errType]: extraKeys.reduce((obj, key) => ({ ...obj, [key]: err[key] }), {}),
+            }
+            : undefined,
+        timestamp: Date.now() / 1000,
+        request:
+            request && request.url
+                ? {
+                    method: request.method,
+                    url: request.url,
+                    headers: request.headers,
+                }
+                : undefined,
+    }
+}
+
+function parse_err(err: any) {
+    return (err.stack || '')
+        .split('\n')
+        .slice(1)
+        .map((line: string) => {
+            if (line.match(/^\s*[-]{4,}$/)) {
+                return { filename: line }
+            }
+
+            // From https://github.com/felixge/node-stack-trace/blob/1ec9ba43eece124526c273c917104b4226898932/lib/stack-trace.js#L42
+            const lineMatch = line.match(/at (?:(.+)\s+\()?(?:(.+?):(\d+)(?::(\d+))?|([^)]+))\)?/);
+            if (!lineMatch) {
+                return
+            }
+
+            return {
+                function: lineMatch[1] || undefined,
+                filename: lineMatch[2] || undefined,
+                lineno: +(lineMatch[3] || 0) || undefined,
+                colno: +(lineMatch[4] || 0) || undefined,
+                in_app: lineMatch[5] !== 'native' || undefined,
+            }
+        })
+        .filter(Boolean)
+}
+

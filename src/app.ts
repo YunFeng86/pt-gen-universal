@@ -1,18 +1,19 @@
-import { Hono } from 'hono'
+import { Hono, Context } from 'hono'
 import { cors } from 'hono/cors'
-import { AUTHOR, VERSION } from '../lib/common.js'
-import debug_get_err from '../lib/error.js'
+import { AUTHOR, VERSION } from '../lib/const';
+import debug_get_err from '../lib/utils/error';
 
-import { search_douban, gen_douban } from '../lib/douban.js'
-import { search_imdb, gen_imdb } from '../lib/imdb.js'
-import { search_bangumi, gen_bangumi } from '../lib/bangumi.js'
-import { gen_steam } from '../lib/steam.js'
-import { gen_indienova } from '../lib/indienova.js'
-import { gen_gog } from '../lib/gog.js'
-import { search_tmdb, gen_tmdb } from '../lib/tmdb.js'
+import { search_douban, gen_douban } from '../lib/douban';
+import { search_imdb, gen_imdb } from '../lib/imdb';
+import { search_bangumi, gen_bangumi } from '../lib/bangumi';
+import { gen_steam } from '../lib/steam';
+import { gen_indienova } from '../lib/indienova';
+import { gen_gog } from '../lib/gog';
+import { search_tmdb, gen_tmdb } from '../lib/tmdb';
+import { AppConfig } from '../lib/types/config';
 
 // 读取 HTML 页面（兼容 Node.js 和 CF Workers）
-let page = ''
+let page: string = ''
 
 // 检测运行环境并加载 HTML
 async function loadHtmlPage() {
@@ -26,7 +27,7 @@ async function loadHtmlPage() {
       const __dirname = dirname(__filename)
       page = readFileSync(join(__dirname, '../index.html'), 'utf-8')
     } catch (e) {
-      console.warn('Failed to load HTML page:', e.message)
+      console.warn('Failed to load HTML page:', (e as any).message)
     }
   }
   // CF Workers 环境下，page 会在 createApp 时通过参数传入
@@ -64,11 +65,11 @@ const support_list = {
  * @param {boolean} config.doubanIncludeImdb - 是否抓取 IMDb 评分（可选，默认 true）
  * @param {string} config.indienovaCookie - Indienova Cookie（可选）
  */
-export function createApp(storage, config = {}) {
+export function createApp(storage: any, config: AppConfig = {}) {
   const app = new Hono()
 
   // 搜索处理器映射表
-  const searchHandlers = new Map([
+  const searchHandlers = new Map<string, (query: string, config?: AppConfig) => Promise<any>>([
     ['douban', search_douban],
     ['imdb', search_imdb],
     ['bangumi', search_bangumi],
@@ -76,7 +77,7 @@ export function createApp(storage, config = {}) {
   ])
 
   // 信息生成处理器映射表
-  const genHandlers = new Map([
+  const genHandlers = new Map<string, (sid: string, config?: AppConfig) => Promise<any>>([
     ['douban', gen_douban],
     ['imdb', gen_imdb],
     ['bangumi', gen_bangumi],
@@ -133,7 +134,7 @@ export function createApp(storage, config = {}) {
   })
 
   // 生成缓存键（剔除认证参数，提高缓存共享率）
-  function generateCacheKey(c) {
+  function generateCacheKey(c: Context) {
     const url = new URL(c.req.url)
     // 移除认证相关参数
     url.searchParams.delete('apikey')
@@ -195,7 +196,7 @@ export function createApp(storage, config = {}) {
     try {
       const data = await handler(keywords, config)
       return c.json(makeJsonResponseData(data))
-    } catch (e) {
+    } catch (e: any) {
       return handleError(c, e)
     }
   })
@@ -254,7 +255,7 @@ export function createApp(storage, config = {}) {
   })
 
   // 站点信息处理函数（消除重复代码）
-  async function handleSiteInfo(c, site, sid) {
+  async function handleSiteInfo(c: Context, site: string, sid: string) {
     const handler = genHandlers.get(site)
     if (!handler) {
       return c.json({ error: `Unknown value of key 'site': ${site}` }, 400)
@@ -263,15 +264,15 @@ export function createApp(storage, config = {}) {
     try {
       const data = await handler(sid, config)
       return c.json(makeJsonResponseData(data))
-    } catch (e) {
+    } catch (e: any) {
       return handleError(c, e)
     }
   }
 
   // 错误处理函数
-  function handleError(c, e) {
+  function handleError(c: Context, e: any) {
     const debug = c.req.query('debug') === '1'
-    const err_return = {
+    const err_return: any = {
       error: `Internal Error, Please contact @${AUTHOR}. Exception: ${e.message}`
     }
 
@@ -283,7 +284,7 @@ export function createApp(storage, config = {}) {
   }
 
   // 生成响应数据（兼容旧格式）
-  function makeJsonResponseData(body_update) {
+  function makeJsonResponseData(body_update: any) {
     return {
       success: !body_update.error,
       error: body_update.error || null,
@@ -297,3 +298,4 @@ export function createApp(storage, config = {}) {
 
   return app
 }
+

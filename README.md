@@ -9,6 +9,8 @@
 - **跨平台支持**：Cloudflare Workers / Node.js / Bun 三种运行时
 - **开发体验提升**：本地秒启动，支持热重载
 - **向后兼容**：旧 API 格式完全兼容（自动重定向）
+- **TypeScript 重构**：核心逻辑采用 TypeScript 编写，更稳健
+- **三层架构**：Scraper / Normalizer / Formatter 解耦设计
 
 ## 快速开始
 
@@ -172,9 +174,9 @@ GET /?site=douban&sid=1292052
 | **imdb** | ✅ | `https://www.imdb.com/title/tt0111161/` |
 | **bangumi** | ✅ | `https://bgm.tv/subject/12345` |
 | **tmdb** | ✅ | `https://www.themoviedb.org/movie/278` |
-| **steam** | ❌ | `https://store.steampowered.com/app/730/` |
-| **indienova** | ❌ | `https://indienova.com/game/game-name` |
-| **gog** | ❌ | `https://www.gog.com/game/cyberpunk_2077` |
+| **steam** | ✅ | `https://store.steampowered.com/app/730/` |
+| **indienova** | ✅ | `https://indienova.com/game/game-name` |
+| **gog** | ✅ | `https://www.gog.com/game/cyberpunk_2077` |
 
 > **注意**：Steam 服务器限制 CF Worker 访问，使用CF Worker时相关功能可用性将下降。
 
@@ -315,14 +317,13 @@ pt-gen-universal/
 │       ├── node.js            # Node.js 入口
 │       └── bun.js             # Bun 入口
 ├── lib/                       # 站点处理模块
-│   ├── common.js              # 公共函数
-│   ├── douban.js              # 豆瓣
-│   ├── imdb.js                # IMDb
-│   ├── bangumi.js             # Bangumi
-│   ├── tmdb.js                # TMDB
-│   ├── steam.js               # Steam
-│   ├── gog.js                 # GOG
-│   └── indienova.js           # indienova
+│   ├── scrapers/              # 数据抓取层
+│   ├── normalizers/           # 数据清洗层
+│   ├── formatters/            # 数据格式化层
+│   ├── orchestrator.ts        # 核心控制器
+│   ├── types/                 # 类型定义
+│   ├── const.ts               # 常量定义
+│   └── utils/                 # 工具函数
 ├── index.html                 # Web UI
 ├── package.json
 └── wrangler.toml              # CF Workers 配置

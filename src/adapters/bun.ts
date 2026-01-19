@@ -1,9 +1,8 @@
-import { serve } from '@hono/node-server'
-import { createApp } from '../app.js'
-import { MemoryStorage } from '../storage/memory.js'
+import { createApp } from '../app'
+import { MemoryStorage } from '../storage/memory'
 
 /**
- * Node.js 运行时入口
+ * Bun 运行时入口
  */
 
 // 创建内存存储适配器
@@ -19,12 +18,10 @@ const app = createApp(storage, {
   indienovaCookie: process.env.INDIENOVA_COOKIE
 })
 
-// Node.js 服务器配置
-const port = Number(process.env.PORT) || 3000
-
-serve({
+// Bun 服务器配置
+export default {
   fetch: app.fetch,
-  port
-}, (info) => {
-  console.log(`🚀 PT-Gen server running on http://localhost:${info.port}`)
-})
+  port: Number(process.env.PORT) || 3000
+}
+
+console.log(`🚀 PT-Gen server running on http://localhost:${Number(process.env.PORT) || 3000}`)
