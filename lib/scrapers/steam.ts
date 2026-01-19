@@ -10,24 +10,39 @@ export class SteamScraper implements Scraper {
     async fetch(id: string, config: AppConfig): Promise<SteamRawData> {
         const steamUrl = `https://store.steampowered.com/app/${id}/?l=schinese`;
 
-        // Use cookies to bypass age check
+        // Use cookies to bypass age check and force language
         const headers = {
             "Cookie": "lastagecheckage=1-January-1975; birthtime=157737601; mature_content=1; wants_mature_content=1; Steam_Language=schinese"
         };
 
         const [pageResp, steamCnResp] = await Promise.all([
-            fetchWithTimeout(steamUrl, { headers }, config.doubanTimeoutMs || 10000),
+            fetchWithTimeout(steamUrl, { headers, redirect: 'manual' }, config.doubanTimeoutMs || 10000),
             fetchWithTimeout(`https://steamdb.keylol.com/app/${id}/data.js?v=38`)
         ]);
 
         if (pageResp.status === 302) {
-            throw new Error(NONE_EXIST_ERROR);
+            return {
+                site: 'steam',
+                sid: id,
+                success: false,
+                error: NONE_EXIST_ERROR
+            };
         }
         if (pageResp.status === 403) {
-            throw new Error("GenHelp was temporary banned by Steam Server, Please wait....");
+            return {
+                site: 'steam',
+                sid: id,
+                success: false,
+                error: "GenHelp was temporary banned by Steam Server, Please wait...."
+            };
         }
         if (!pageResp.ok) {
-            throw new Error(`Steam request failed: ${pageResp.status} ${pageResp.statusText}`);
+            return {
+                site: 'steam',
+                sid: id,
+                success: false,
+                error: `Steam request failed: ${pageResp.status} ${pageResp.statusText}`
+            };
         }
 
         const mainHtml = await pageResp.text();
@@ -54,7 +69,6 @@ export class SteamScraper implements Scraper {
     }
 
     async search(query: string, config: AppConfig): Promise<SearchResult[]> {
-        // Steam search generic implementation as fallback
         const url = `https://store.steampowered.com/api/storesearch/?term=${encodeURIComponent(query)}&l=schinese&cc=CN`;
         try {
             const response = await fetchWithTimeout(url);

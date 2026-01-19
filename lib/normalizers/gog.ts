@@ -71,11 +71,6 @@ export class GogNormalizer implements Normalizer {
                             if (!url.includes('_ggvgl')) url = `${url}_ggvgl_2x.jpg`;
                             return url;
                         });
-                    } else {
-                        // API fallback
-                        // API expanded screenshots? legacy checked api but mostly relied on cardProduct?
-                        // API screenshots structure?
-                        // Legacy: data["screenshot"] = [] initially.
                     }
 
                     // System Reqs
@@ -124,6 +119,7 @@ export class GogNormalizer implements Normalizer {
 
         // Description
         const descHtml = apiJson.description?.full || apiJson.description?.lead || "";
+        let cleanDescr = "";
         if (descHtml) {
             let descrBbcode = html2bbcode(descHtml);
             descrBbcode = descrBbcode
@@ -131,11 +127,72 @@ export class GogNormalizer implements Normalizer {
                 .replace(/\[h2\][\s\S]*?\[\/h2\]/ig, "")
                 .replace(/\[hr\]/ig, "");
 
-            info.introduction = descrBbcode.split("\n").map((x: string) => x.trim()).filter((x: string) => x.length > 0).join("\n").trim();
+            cleanDescr = descrBbcode.split("\n").map(x => x.trim()).filter(x => x.length > 0).join("\n").trim();
+            info.introduction = cleanDescr;
         }
 
-        // Release Date?
-        // Legacy didn't extract.
+        // ------------------------
+        // Construct Full BBCode (Legacy Logic)
+        // ------------------------
+        let descr = info.poster ? `[img]${info.poster}[/img]\n\n` : '';
+
+        descr += "【基本信息】\n\n";
+        if (info.title) descr += `名称: ${info.title}\n`;
+        if (info.extra.platforms.length > 0) descr += `平台: ${info.extra.platforms.join("、")}\n`;
+        if (data.gog_id) {
+            const gogLink = `https://www.gog.com/game/${apiJson.slug || data.gog_id}`;
+            descr += `GOG页面: ${gogLink}\n`;
+        }
+        if (info.extra.languages.length > 0) descr += `游戏语种: ${info.extra.languages.join("、")}\n`;
+
+        descr += "\n【游戏简介】\n\n";
+        if (cleanDescr) descr += `${cleanDescr}\n\n`;
+
+        // System Requirements
+        if (Object.keys(info.extra.system_requirements).length > 0) {
+            descr += "【系统需求】\n\n";
+
+            for (let [osName, osData] of Object.entries(info.extra.system_requirements) as any) {
+                let osDisplayName = osName === "windows" ? "Windows" :
+                    osName === "osx" ? "Mac OS X" :
+                        osName === "linux" ? "Linux" : osName;
+
+                descr += `${osDisplayName}`;
+                if (osData.versions) descr += ` (${osData.versions})`;
+                descr += ":\n\n";
+
+                let reqs = osData.requirements || {};
+
+                // Minimum
+                if (reqs.minimum) {
+                    descr += "最低配置:\n";
+                    for (let [reqId, reqDesc] of Object.entries(reqs.minimum) as any) {
+                        let reqName = reqId.charAt(0).toUpperCase() + reqId.slice(1);
+                        descr += `  ${reqName}: ${reqDesc}\n`;
+                    }
+                    descr += "\n";
+                }
+
+                // Recommended
+                if (reqs.recommended) {
+                    descr += "推荐配置:\n";
+                    for (let [reqId, reqDesc] of Object.entries(reqs.recommended) as any) {
+                        let reqName = reqId.charAt(0).toUpperCase() + reqId.slice(1);
+                        descr += `  ${reqName}: ${reqDesc}\n`;
+                    }
+                    descr += "\n";
+                }
+            }
+        }
+
+        descr += GAME_INSTALL_TEMPLATE + "\n\n";
+
+        if (info.extra.screenshots.length > 0) {
+            descr += "【游戏截图】\n\n";
+            descr += info.extra.screenshots.map((x: string) => `[img]${x}[/img]`).join("\n") + "\n\n";
+        }
+
+        info.extra.descr_bbcode = descr.trim();
 
         return info;
     }

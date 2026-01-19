@@ -21,7 +21,8 @@ export class IndienovaNormalizer implements Normalizer {
 
         const intro = $("#tabs-intro div.bottommargin-sm").text().trim();
         const descrField = $("article");
-        const descr = descrField.length > 0 ? descrField.text().replace("……显示全部", "").trim() : intro;
+        // Legacy: descr_field.text().replace("……显示全部", "").trim() : data["intro"]
+        const descrText = descrField.length > 0 ? descrField.text().replace("……显示全部", "").trim() : intro;
 
         // Links
         const links: { [key: string]: string } = {};
@@ -61,11 +62,46 @@ export class IndienovaNormalizer implements Normalizer {
             return `${store}：${p}`;
         }).get();
 
+        // -------------------------
+        // Construct Full BBCode (Legacy Logic)
+        // -------------------------
+        let bbcode = cover ? `[img]${cover}[/img]\n\n` : "";
+        bbcode += "【基本信息】\n\n";
+
+        if (chineseTitle) bbcode += `中文名称：${chineseTitle}\n`;
+        if (englishTitle) bbcode += `英文名称：${englishTitle}\n`;
+        if (anotherTitle) bbcode += `其他名称：${anotherTitle}\n`;
+        if (releaseDate) bbcode += `发行时间：${releaseDate}\n`;
+        if (rate) bbcode += `评分：${rate}\n`;
+        if (dev.length > 0) bbcode += `开发商：${dev.join(" / ")}\n`;
+        if (pub.length > 0) bbcode += `发行商：${pub.join(" / ")}\n`;
+        if (introDetail.length > 0) bbcode += `${introDetail.join("\n")}\n`;
+        if (cat.length > 0) bbcode += `标签：${cat.slice(0, 8).join(" | ")}\n`;
+
+        if (Object.keys(links).length > 0) {
+            const formatLinks = Object.entries(links).map(([key, value]) => `[url=${value}]${key}[/url]`);
+            bbcode += `链接地址：${formatLinks.join("  ")}\n`;
+        }
+
+        if (price.length > 0) bbcode += `价格信息：${price.join(" / ")}\n`;
+        bbcode += "\n";
+
+        if (descrText) bbcode += `【游戏简介】\n\n${descrText}\n\n`;
+
+        if (screenshots.length > 0) {
+            bbcode += `【游戏截图】\n\n${screenshots.map(x => `[img]${x}[/img]`).join("\n")}\n\n`;
+        }
+
+        if (level.length > 0) {
+            bbcode += `【游戏评级】\n\n${level.map(x => `[img]${x}[/img]`).join("\n")}\n\n`;
+        }
+
+
         return {
             site: 'indienova',
             id: data.sid,
             title: chineseTitle,
-            original_title: englishTitle || chineseTitle, // fallback
+            original_title: englishTitle || chineseTitle,
             chinese_title: chineseTitle,
             foreign_title: englishTitle,
             aka: anotherTitle ? [anotherTitle] : [],
@@ -83,11 +119,11 @@ export class IndienovaNormalizer implements Normalizer {
 
             poster: cover,
 
-            director: dev, // Map Dev -> Director
-            writer: pub, // Map Pub -> Writer
+            director: dev,
+            writer: pub,
             cast: [],
 
-            introduction: descr, // Use full description
+            introduction: descrText,
             awards: '',
             tags: cat,
 
@@ -98,7 +134,8 @@ export class IndienovaNormalizer implements Normalizer {
                 rate: rate,
                 screenshots: screenshots,
                 level: level,
-                price: price
+                price: price,
+                descr_bbcode: bbcode.trim() // Full Override
             }
         };
     }

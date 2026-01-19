@@ -18,10 +18,15 @@ export class ImdbScraper implements Scraper {
         imdbId = "tt" + imdbId.padStart(7, "0");
         const imdbUrl = `https://www.imdb.com/title/${imdbId}/`;
 
+        const headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+            "Accept-Language": "en-US,en;q=0.9"
+        };
+
         // Fetch Main Page and Release Info Page concurrently
         const [mainResp, releaseResp] = await Promise.all([
-            fetchWithTimeout(imdbUrl, {}, config.doubanTimeoutMs || 10000), // Reuse timeout config?
-            fetchWithTimeout(`${imdbUrl}releaseinfo`, {}, config.doubanTimeoutMs || 10000)
+            fetchWithTimeout(imdbUrl, { headers }, config.doubanTimeoutMs || 10000),
+            fetchWithTimeout(`${imdbUrl}releaseinfo`, { headers }, config.doubanTimeoutMs || 10000)
         ]);
 
         if (!mainResp.ok) {

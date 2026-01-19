@@ -9,62 +9,26 @@ export class ImdbNormalizer implements Normalizer {
         const data = rawData;
         const jsonLd = data.json_ld || {};
 
-        const info: MediaInfo = {
-            site: 'imdb',
-            id: data.imdb_id,
+        // Parse Next Data for extra metrics
+        const nextDataRaw = data.next_data || {};
+        const totalData: any = {};
 
-            // Titles
-            title: jsonLd.name || '',
-            original_title: jsonLd.name || '', // Assuming name is original or primary
-            chinese_title: '',
-            foreign_title: jsonLd.name || '',
-            aka: (data.aka || []).map(a => a.title),
-            trans_title: [], // To be populated
-            this_title: [jsonLd.name || ''],
-
-            // Basics
-            year: data.json_ld?.datePublished ? data.json_ld.datePublished.substring(0, 4) : '',
-            playdate: (data.release_date || []).map(r => `${r.date}(${r.country})`),
-            region: [], // To be extracted from details or other fields? Legacy didn't explicitly extract region?
-            // Legacy didn't seem to extract "region" explicitly in `gen_imdb`? 
-            // It extracted `datePublished` (year).
-            genre: Array.isArray(jsonLd.genre) ? jsonLd.genre : (jsonLd.genre ? [jsonLd.genre] : []),
-            language: [], // Legacy didn't extract language explicitly?
-            duration: jsonLd.duration || '', // PT2H22M format? 
-            // Legacy just copies `duration`. JSON-LD duration is ISO 8601 (PT2H). 
-            // Legacy logic: `data[copy_item] = page_json[copy_item]`. So it copied ISO format?
-            // Wait, standard `MediaInfo` duration is typically "142 minutes". 
-            // If legacy returned raw ISO, maybe formatters handled it? 
-            // `BBCodeFormatter` just puts it in.
-
-            episodes: '',
-            seasons: '',
-
-            poster: jsonLd.image || '',
-
-            // People
-            director: [],
-            writer: [],
-            cast: [],
-
-            introduction: jsonLd.description || '',
-            awards: '',
-            tags: data.json_ld?.keywords ? data.json_ld.keywords.split(',') : [],
-
-            // Ratings
-            imdb_id: data.imdb_id,
-            imdb_link: `https://www.imdb.com/title/${data.imdb_id}/`,
-            imdb_rating_average: jsonLd.aggregateRating?.ratingValue || 0,
-            imdb_votes: jsonLd.aggregateRating?.ratingCount || 0,
-            imdb_rating: `${jsonLd.aggregateRating?.ratingValue || 0}/10 from ${jsonLd.aggregateRating?.ratingCount || 0} users`,
-
-            // Extra
-            extra: {
-                details: data.details,
-                reviews: data.next_data?.props?.urqlState?.reviews, // complex path
-                // ... map other legacy fields if needed
+        try {
+            if (nextDataRaw?.props?.urqlState) {
+                for (const [_, value] of Object.entries(nextDataRaw.props.urqlState)) {
+                    if ((value as any)?.data?.title?.id === data.imdb_id) {
+                        Object.assign(totalData, (value as any).data.title);
+                    }
+                }
             }
-        };
+        } catch { }
+
+        // Extract extra metrics
+        let metascore = '';
+        if (totalData.metacritic?.metascore?.score) metascore = totalData.metacritic.metascore.score;
+
+        let reviews = '';
+        if (totalData.reviews?.total) reviews = totalData.reviews.total;
 
         // Standardize People
         const mapPeople = (item: any) => {
@@ -73,19 +37,82 @@ export class ImdbNormalizer implements Normalizer {
             return arr.filter((p: any) => p['@type'] === 'Person').map((p: any) => p.name);
         };
 
-        info.director = mapPeople(jsonLd.director);
-        info.writer = mapPeople(jsonLd.creator); // Legacy mapped 'creator' to 'creators'
-        info.cast = mapPeople(jsonLd.actor);
+        const directors = mapPeople(jsonLd.director);
+        const creators = mapPeople(jsonLd.creator);
+        const actors = mapPeople(jsonLd.actor);
 
-        // Titles logic
-        // Legacy didn't do much title logic for IMDb, just "Title: {name}".
-        // We can just populate trans_title with akas.
-        info.trans_title = info.aka;
+        // Basic Info
+        const name = jsonLd.name || '';
+        const keywords = jsonLd.keywords ? jsonLd.keywords.split(',') : [];
+        const datePublished = jsonLd.datePublished || '';
+        const rating = jsonLd.aggregateRating?.ratingValue || 0;
+        const votes = jsonLd.aggregateRating?.ratingCount || 0;
+        const imdbRatingStr = `${rating}/10 from ${votes} users`;
+        const imdbLink = `https://www.imdb.com/title/${data.imdb_id}/`;
+        const poster = jsonLd.image || '';
+        const description = jsonLd.description || '';
+        const duration = jsonLd.duration || '';
 
-        // Handle Duration format?
-        // If it is PT... format, maybe we should parse it?
-        // But for now, let's keep it raw to match legacy behavior unless we want to improve.
-        // Legacy: `data["duration"] = page_json["duration"];`
+        // Generate BBCode Format
+        let descr = "";
+        if (poster) descr += `[img]${poster}[/img]\n\n`;
+        if (name) descr += `Title: ${name}\n`;
+        if (keywords.length > 0) descr += `Keywords: ${keywords.join(", ")}\n`;
+        if (datePublished) descr += `Date Published: ${datePublished}\n`;
+        if (rating) descr += `IMDb Rating: ${imdbRatingStr}\n`;
+        descr += `IMDb Link: ${imdbLink}\n`;
+        if (directors.length > 0) descr += `Directors: ${directors.join(" / ")}\n`;
+        if (creators.length > 0) descr += `Creators: ${creators.join(" / ")}\n`;
+        if (actors.length > 0) descr += `Actors: ${actors.join(" / ")}\n`;
+
+        if (description) {
+            descr += `\nIntroduction\n    ${description.replace(/\n/g, "\n" + "　".repeat(2))}\n`;
+        }
+
+        const info: MediaInfo = {
+            site: 'imdb',
+            id: data.imdb_id,
+
+            title: name,
+            original_title: name,
+            chinese_title: '',
+            foreign_title: name,
+            aka: (data.aka || []).map(a => a.title),
+            trans_title: [], // Populated from AKAs? 
+            this_title: [name],
+
+            year: datePublished ? datePublished.substring(0, 4) : '',
+            playdate: (data.release_date || []).map(r => `${r.date}(${r.country})`),
+            region: [],
+            genre: Array.isArray(jsonLd.genre) ? jsonLd.genre : (jsonLd.genre ? [jsonLd.genre] : []),
+            language: [],
+            duration: duration,
+            episodes: '',
+            seasons: '',
+
+            poster: poster,
+
+            director: directors,
+            writer: creators,
+            cast: actors,
+
+            introduction: description,
+            awards: '',
+            tags: keywords,
+
+            imdb_id: data.imdb_id,
+            imdb_link: imdbLink,
+            imdb_rating_average: rating,
+            imdb_votes: votes,
+            imdb_rating: imdbRatingStr,
+
+            extra: {
+                details: data.details,
+                reviews: reviews,
+                metascore: metascore,
+                descr_bbcode: descr.trim()
+            }
+        };
 
         return info;
     }

@@ -5,6 +5,11 @@ import { ensureArray } from '../utils/array';
 
 export class BBCodeFormatter implements Formatter {
     format(data: MediaInfo): string {
+        // Source-specific override (e.g. Steam, Bangumi)
+        if (data.extra?.descr_bbcode) {
+            return String(data.extra.descr_bbcode).trim();
+        }
+
         const poster = String(data?.poster || '');
         const trans_title = normalizeMaybeArray(data?.trans_title).trim();
         const this_title = normalizeMaybeArray(data?.this_title).trim();
