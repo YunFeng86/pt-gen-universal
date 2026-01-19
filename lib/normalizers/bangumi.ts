@@ -107,58 +107,7 @@ export class BangumiNormalizer implements Normalizer {
 
         const bangumiLink = `https://bgm.tv/subject/${data.sid}`;
         const mainTitle = $('h1.nameSingle > a').text().trim();
-
-        // ------------------
-        // Construct Full BBCode (Legacy Logic Port)
-        // ------------------
-        let descr = poster ? `[img]${poster}[/img]\n\n` : '';
-
-        if (uniqueAliases.length > 0) {
-            descr += `◎译　　名　${uniqueAliases.join(' / ')}\n`;
-        }
-
-        descr += `◎片　　名　${mainTitle}\n`;
         const startYear = infoMap["放送开始"] ? infoMap["放送开始"].substring(0, 4) : '';
-        if (startYear) descr += `◎年　　代　${startYear}\n`;
-        if (tags.length > 0) descr += `◎类　　别　${tags.join(" / ")}\n`;
-        if (infoMap["放送开始"]) descr += `◎上映日期　${infoMap["放送开始"]}\n`;
-        if (rating || votes) descr += `◎Bangumi评分　${rating}/10 from ${votes} users\n`;
-        descr += `◎Bangumi链接　${bangumiLink}\n`;
-        if (infoMap["话数"]) descr += `◎话　　数　${infoMap["话数"]}\n`;
-
-        // Staff (Directors/Writers)
-        const staffDirectors = staff.filter(s => s.includes("监督") || s.includes("导演")).slice(0, 2);
-        const staffWriters = staff.filter(s => s.includes("脚本") || s.includes("系列构成")).slice(0, 2);
-
-        if (staffDirectors.length > 0) {
-            descr += `◎导　　演　${staffDirectors.map(d => d.split(/[:：]\s*/)[1]).join(" / ")}\n`;
-        }
-        if (staffWriters.length > 0) {
-            descr += `◎编　　剧　${staffWriters.map(w => w.split(/[:：]\s*/)[1]).join(" / ")}\n`;
-        }
-
-        // Cast
-        if (cast.length > 0) {
-            descr += `◎主　　演　${cast.slice(0, 9).join("\n" + "　".repeat(4) + "  　").trim()}\n`;
-        }
-
-        // Other Staff
-        const otherStaff = staff.filter(s =>
-            !s.includes("监督") && !s.includes("导演") &&
-            !s.includes("脚本") && !s.includes("系列构成")
-        ).slice(0, 15);
-
-        if (otherStaff.length > 0) {
-            descr += `\n◎制作人员\n\n　　${otherStaff.join("\n　　")}\n`;
-        }
-
-        // Introduction
-        if (story) {
-            descr += `\n◎简　　介\n\n　　${story.replace(/\n/g, "\n" + "　".repeat(2))}\n\n`;
-        }
-
-        // Source
-        descr += `(来源于 ${bangumiLink} )\n`;
 
         return {
             site: 'bangumi',
@@ -191,7 +140,11 @@ export class BangumiNormalizer implements Normalizer {
             tags: tags,
 
             extra: {
-                descr_bbcode: descr.trim()
+                info_map: infoMap,
+                staff: staff,
+                aliases: uniqueAliases,
+                rating: rating,
+                votes: votes
             }
         };
     }

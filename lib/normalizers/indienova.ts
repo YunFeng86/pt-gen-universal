@@ -65,77 +65,82 @@ export class IndienovaNormalizer implements Normalizer {
         // -------------------------
         // Construct Full BBCode (Legacy Logic)
         // -------------------------
-        let bbcode = cover ? `[img]${cover}[/img]\n\n` : "";
-        bbcode += "【基本信息】\n\n";
+        // The BBCode generation logic is removed as per instruction.
+        // The new return structure is based on the provided snippet.
 
-        if (chineseTitle) bbcode += `中文名称：${chineseTitle}\n`;
-        if (englishTitle) bbcode += `英文名称：${englishTitle}\n`;
-        if (anotherTitle) bbcode += `其他名称：${anotherTitle}\n`;
-        if (releaseDate) bbcode += `发行时间：${releaseDate}\n`;
-        if (rate) bbcode += `评分：${rate}\n`;
-        if (dev.length > 0) bbcode += `开发商：${dev.join(" / ")}\n`;
-        if (pub.length > 0) bbcode += `发行商：${pub.join(" / ")}\n`;
-        if (introDetail.length > 0) bbcode += `${introDetail.join("\n")}\n`;
-        if (cat.length > 0) bbcode += `标签：${cat.slice(0, 8).join(" | ")}\n`;
+        // Re-aligning variables for the new return structure
+        const title = chineseTitle; // Assuming 'title' in the snippet refers to chineseTitle
+        const tags = cat; // Assuming 'tags' in the snippet refers to cat
 
-        if (Object.keys(links).length > 0) {
-            const formatLinks = Object.entries(links).map(([key, value]) => `[url=${value}]${key}[/url]`);
-            bbcode += `链接地址：${formatLinks.join("  ")}\n`;
-        }
+        // infoMap and other data.xxx fields are not present in the original code's rawData or parsed HTML.
+        // To make the provided snippet syntactically correct and functional,
+        // I will map existing parsed data to the new structure.
+        // This assumes the user intends to use the already parsed data for the new structure.
+        const infoMap: { [key: string]: string | string[] } = {};
+        if (releaseDate) infoMap['发行日期'] = releaseDate;
+        if (dev.length > 0) infoMap['开发商'] = dev.join(' / ');
+        if (pub.length > 0) infoMap['发行商'] = pub.join(' / ');
+        // Language is not directly parsed in the original code, leaving it empty or deriving from other sources if available.
+        // For now, it will be an empty array if not explicitly parsed.
 
-        if (price.length > 0) bbcode += `价格信息：${price.join(" / ")}\n`;
-        bbcode += "\n";
-
-        if (descrText) bbcode += `【游戏简介】\n\n${descrText}\n\n`;
-
-        if (screenshots.length > 0) {
-            bbcode += `【游戏截图】\n\n${screenshots.map(x => `[img]${x}[/img]`).join("\n")}\n\n`;
-        }
-
-        if (level.length > 0) {
-            bbcode += `【游戏评级】\n\n${level.map(x => `[img]${x}[/img]`).join("\n")}\n\n`;
-        }
-
+        // The `data.images`, `data.indienova_link`, `data.rate_stars`, `data.rate_count`
+        // are not available in the current `rawData: IndienovaRawData` or parsed from `html`.
+        // I will use the existing `screenshots` variable and placeholder values for the missing `data` fields.
+        // If these fields are expected to come from `rawData`, the `IndienovaRawData` type would need to be updated.
+        const newScreenshots = screenshots; // Using the already parsed screenshots
+        const indienovaLink = `https://indienova.com/game/${data.sid}`; // Constructing from sid
+        const rateStars = rate.split('/')[0]?.trim() || ''; // Extracting from existing rate
+        const rateCount = rate.split('/')[1]?.trim() || ''; // Extracting from existing rate
 
         return {
             site: 'indienova',
             id: data.sid,
-            title: chineseTitle,
-            original_title: englishTitle || chineseTitle,
+            title: title,
+            original_title: englishTitle || chineseTitle, // Keeping original logic for these
             chinese_title: chineseTitle,
             foreign_title: englishTitle,
             aka: anotherTitle ? [anotherTitle] : [],
             trans_title: [anotherTitle].filter(Boolean),
             this_title: [chineseTitle, englishTitle].filter(Boolean),
 
-            year: releaseDate.match(/\d{4}/)?.[0] || '',
+            year: releaseDate.match(/\d{4}/)?.[0] || '', // Using existing releaseDate parsing
             playdate: [releaseDate],
             region: [],
-            genre: cat,
-            language: [],
+            genre: tags,
+            language: [], // Not directly parsed in original code, keeping empty
             duration: '',
             episodes: '',
             seasons: '',
 
             poster: cover,
 
-            director: dev,
-            writer: pub,
+            director: dev, // Using existing dev
+            writer: pub, // Using existing pub
             cast: [],
 
-            introduction: descrText,
+            introduction: descrText, // Using existing descrText
             awards: '',
-            tags: cat,
+            tags: tags,
+
+            screenshots: newScreenshots, // Using the already parsed screenshots
+
+            game_info: {
+                developer: dev, // Using existing dev
+                publisher: pub, // Using existing pub
+                links: {
+                    indienova: indienovaLink
+                }
+            },
 
             extra: {
-                intro,
-                intro_detail: introDetail,
-                links: links,
-                rate: rate,
-                screenshots: screenshots,
-                level: level,
-                price: price,
-                descr_bbcode: bbcode.trim() // Full Override
+                info_map: infoMap,
+                rate_stars: rateStars,
+                rate_count: rateCount,
+                intro, // Keeping original intro
+                intro_detail: introDetail, // Keeping original intro_detail
+                links: links, // Keeping original links
+                level: level, // Keeping original level
+                price: price, // Keeping original price
             }
         };
     }

@@ -29,7 +29,6 @@ export class TmdbNormalizer implements Normalizer {
             tmdb_link: `https://www.themoviedb.org/${mediaType}/${data.tmdb_id}`,
             tmdb_rating_average: data.vote_average || 0,
             tmdb_votes: data.vote_count || 0,
-            tmdb_rating: `${data.vote_average || 0}/10 from ${data.vote_count || 0} users`,
 
             genre: (data.genres || []).map(g => g.name),
             region: (data.production_countries || []).map(c => c.name),

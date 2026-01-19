@@ -61,6 +61,23 @@ export interface MediaInfo {
     tmdb_link?: string;             // TMDB 链接
 
     // 扩展字段 (用于存储各站点特有的额外信息)
+    screenshots?: string[];         // 截图列表
+    website?: string;               // 官方网站
+
+    // 游戏特定信息
+    game_info?: {
+        platform?: string[];        // 平台 (Windows, Mac, etc.)
+        developer?: string[];       // 开发商
+        publisher?: string[];       // 发行商
+        price?: string[];           // 价格信息
+        level?: string[];           // 分级信息
+        links?: Record<string, string>; // 外部链接
+        spec?: Record<string, any>; // 系统需求
+        ui_lang?: string[];         // 界面语言
+        audio_lang?: string[];      // 音频语言
+        sub_lang?: string[];        // 字幕语言
+    };
+
     [key: string]: any;
 }
 

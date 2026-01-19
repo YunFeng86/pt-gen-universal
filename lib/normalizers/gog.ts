@@ -1,4 +1,3 @@
-
 import { Normalizer } from '../interfaces/normalizer';
 import { GogRawData } from '../types/raw-data';
 import { MediaInfo } from '../types/schema';
@@ -12,42 +11,20 @@ export class GogNormalizer implements Normalizer {
         const apiJson = data.api_data || {};
         const html = data.store_page_html || '';
 
-        const info: MediaInfo = {
-            site: 'gog',
-            id: data.sid,
-            title: apiJson.title || '',
-            original_title: apiJson.title || '',
-            chinese_title: '',
-            foreign_title: '',
-            aka: [],
-            trans_title: [],
-            this_title: [apiJson.title || ''],
-            year: '',
-            playdate: [],
-            region: [],
-            genre: [],
-            language: [],
-            duration: '',
-            episodes: '',
-            seasons: '',
-            poster: '',
-            director: [],
-            writer: [],
-            cast: [],
-            introduction: '',
-            awards: '',
-            tags: [],
-            extra: {
-                gog_id: data.gog_id,
-                slug: apiJson.slug,
-                platforms: [],
-                languages: [],
-                system_requirements: {},
-                screenshots: []
-            }
-        };
+        let title = apiJson.title || '';
+        let releaseDate = apiJson.releaseDate || '';
+        let languages: string[] = Object.values(apiJson.languages || {});
+        let cover = '';
+        let descr = '';
+        let devs: string[] = [];
+        let pubs: string[] = [];
+        let price: string | null = null;
+        let screenshots: string[] = [];
+        let systemRequirements: any = {};
+        let platforms: string[] = [];
+        const tags: string[] = [];
 
-        // Parse HTML (System Reqs, Screenshots, Poster)
+        // Parse HTML (Poster, Description, System Reqs, Screenshots)
         if (html) {
             let cardMatch = html.match(/cardProduct:\s*(\{[\s\S]*?\})\s*(?:,\s*\w+:|$)/);
             if (!cardMatch) {
@@ -60,12 +37,12 @@ export class GogNormalizer implements Normalizer {
 
                     // Poster
                     if (cardProduct.boxArtImage) {
-                        info.poster = cardProduct.boxArtImage;
+                        cover = cardProduct.boxArtImage;
                     }
 
                     // Screenshots
                     if (cardProduct.screenshots && cardProduct.screenshots.length > 0) {
-                        info.extra.screenshots = cardProduct.screenshots.map((s: any) => {
+                        screenshots = cardProduct.screenshots.map((s: any) => {
                             let url = s.imageUrl || s;
                             if (!url.startsWith('http')) url = `https:${url}`;
                             if (!url.includes('_ggvgl')) url = `${url}_ggvgl_2x.jpg`;
@@ -82,7 +59,7 @@ export class GogNormalizer implements Normalizer {
 
                         if (!osName || sysReqs.length === 0) continue;
 
-                        info.extra.system_requirements[osName] = {
+                        systemRequirements[osName] = {
                             versions: osVer,
                             requirements: {}
                         };
@@ -92,10 +69,10 @@ export class GogNormalizer implements Normalizer {
                             const reqs = reqGroup.requirements || [];
                             if (!reqType || reqs.length === 0) continue;
 
-                            info.extra.system_requirements[osName].requirements[reqType] = {};
+                            systemRequirements[osName].requirements[reqType] = {};
                             reqs.forEach((r: any) => {
                                 if (r.id && r.description) {
-                                    info.extra.system_requirements[osName].requirements[reqType][r.id] = r.description;
+                                    systemRequirements[osName].requirements[reqType][r.id] = r.description;
                                 }
                             });
                         }
@@ -108,18 +85,13 @@ export class GogNormalizer implements Normalizer {
         }
 
         // Platforms
-        const platforms = apiJson.content_system_compatibility || {};
-        if (platforms.windows) info.extra.platforms.push("Windows");
-        if (platforms.osx) info.extra.platforms.push("Mac OS X");
-        if (platforms.linux) info.extra.platforms.push("Linux");
-
-        // Languages
-        const langs = apiJson.languages || {};
-        info.extra.languages = Object.values(langs);
+        const platformsData = apiJson.content_system_compatibility || {};
+        if (platformsData.windows) platforms.push("Windows");
+        if (platformsData.osx) platforms.push("Mac OS X");
+        if (platformsData.linux) platforms.push("Linux");
 
         // Description
         const descHtml = apiJson.description?.full || apiJson.description?.lead || "";
-        let cleanDescr = "";
         if (descHtml) {
             let descrBbcode = html2bbcode(descHtml);
             descrBbcode = descrBbcode
@@ -127,73 +99,56 @@ export class GogNormalizer implements Normalizer {
                 .replace(/\[h2\][\s\S]*?\[\/h2\]/ig, "")
                 .replace(/\[hr\]/ig, "");
 
-            cleanDescr = descrBbcode.split("\n").map(x => x.trim()).filter(x => x.length > 0).join("\n").trim();
-            info.introduction = cleanDescr;
+            descr = descrBbcode.split("\n").map(x => x.trim()).filter(x => x.length > 0).join("\n").trim();
         }
 
-        // ------------------------
-        // Construct Full BBCode (Legacy Logic)
-        // ------------------------
-        let descr = info.poster ? `[img]${info.poster}[/img]\n\n` : '';
+        return {
+            site: 'gog',
+            id: data.sid,
+            title: title || '',
+            original_title: title || '',
+            chinese_title: '',
+            foreign_title: title || '',
+            aka: [],
+            trans_title: [],
+            this_title: [title || ''],
 
-        descr += "【基本信息】\n\n";
-        if (info.title) descr += `名称: ${info.title}\n`;
-        if (info.extra.platforms.length > 0) descr += `平台: ${info.extra.platforms.join("、")}\n`;
-        if (data.gog_id) {
-            const gogLink = `https://www.gog.com/game/${apiJson.slug || data.gog_id}`;
-            descr += `GOG页面: ${gogLink}\n`;
-        }
-        if (info.extra.languages.length > 0) descr += `游戏语种: ${info.extra.languages.join("、")}\n`;
+            year: releaseDate ? releaseDate.match(/\d{4}/)?.[0] || '' : '',
+            playdate: releaseDate ? [releaseDate] : [],
+            region: [],
+            genre: tags,
+            language: languages,
+            duration: '',
+            episodes: '',
+            seasons: '',
 
-        descr += "\n【游戏简介】\n\n";
-        if (cleanDescr) descr += `${cleanDescr}\n\n`;
+            poster: cover,
 
-        // System Requirements
-        if (Object.keys(info.extra.system_requirements).length > 0) {
-            descr += "【系统需求】\n\n";
+            director: devs,
+            writer: pubs,
+            cast: [],
 
-            for (let [osName, osData] of Object.entries(info.extra.system_requirements) as any) {
-                let osDisplayName = osName === "windows" ? "Windows" :
-                    osName === "osx" ? "Mac OS X" :
-                        osName === "linux" ? "Linux" : osName;
+            introduction: descr,
+            awards: '',
+            tags: tags,
 
-                descr += `${osDisplayName}`;
-                if (osData.versions) descr += ` (${osData.versions})`;
-                descr += ":\n\n";
+            screenshots: screenshots,
 
-                let reqs = osData.requirements || {};
+            game_info: {
+                platform: platforms,
+                developer: devs,
+                publisher: pubs,
+                links: {
+                    gog: `https://www.gog.com${data.url || ''}`
+                },
+                price: price ? [price] : [],
+                spec: systemRequirements
+            },
 
-                // Minimum
-                if (reqs.minimum) {
-                    descr += "最低配置:\n";
-                    for (let [reqId, reqDesc] of Object.entries(reqs.minimum) as any) {
-                        let reqName = reqId.charAt(0).toUpperCase() + reqId.slice(1);
-                        descr += `  ${reqName}: ${reqDesc}\n`;
-                    }
-                    descr += "\n";
-                }
-
-                // Recommended
-                if (reqs.recommended) {
-                    descr += "推荐配置:\n";
-                    for (let [reqId, reqDesc] of Object.entries(reqs.recommended) as any) {
-                        let reqName = reqId.charAt(0).toUpperCase() + reqId.slice(1);
-                        descr += `  ${reqName}: ${reqDesc}\n`;
-                    }
-                    descr += "\n";
-                }
+            extra: {
+                sysreq: systemRequirements,
+                price: price
             }
-        }
-
-        descr += GAME_INSTALL_TEMPLATE + "\n\n";
-
-        if (info.extra.screenshots.length > 0) {
-            descr += "【游戏截图】\n\n";
-            descr += info.extra.screenshots.map((x: string) => `[img]${x}[/img]`).join("\n") + "\n\n";
-        }
-
-        info.extra.descr_bbcode = descr.trim();
-
-        return info;
+        };
     }
 }

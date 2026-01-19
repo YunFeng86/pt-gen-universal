@@ -204,54 +204,6 @@ export class SteamNormalizer implements Normalizer {
         }
 
 
-        // Construct Formatted Description (BBCode)
-        let descr = "";
-        const headerImg = `https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${data.sid}/header.jpg`;
-        const libraryImg = `https://steamcdn-a.akamaihd.net/steam/apps/${data.sid}/library_600x900_2x.jpg`;
-
-        descr += `[img]${headerImg}[/img]\n\n`;
-        descr += `[img]${libraryImg}[/img]\n\n`;
-
-        descr += "【基本信息】\n\n";
-        if (displayName) descr += `名称: ${displayName}\n`;
-        if (typeLine) descr += `${typeLine}\n`;
-        if (devLine) descr += `${devLine}\n`;
-        if (pubLine) descr += `${pubLine}\n`;
-        if (releaseLine) descr += `${releaseLine}\n`;
-        if (linkbar) descr += `官方网站: ${linkbar}\n`;
-        if (data.sid) descr += `Steam页面: https://store.steampowered.com/app/${data.sid}\n`;
-
-        if (uiAndSubLangs.length > 0 || fullAudioLangs.length > 0) {
-            descr += "游戏语种: ";
-            if (uiAndSubLangs.length > 0) descr += `[b]界面和字幕语言[/b]: ${uiAndSubLangs.join("、")}\n`;
-            if (fullAudioLangs.length > 0) descr += "　　　　  [b]完全音频语言[/b]: " + fullAudioLangs.join("、") + "\n";
-        }
-
-        descr += "\n【游戏简介】\n\n";
-        if (cleanDescr) descr += `${cleanDescr}\n\n`;
-
-        descr += GAME_INSTALL_TEMPLATE + "\n\n";
-
-        if (windowsMin.length > 0 || windowsRec.length > 0) {
-            descr += "【配置需求】\n\n";
-            descr += "Windows\n\n";
-            if (windowsMin.length > 0) {
-                descr += "[b]最低配置[/b]\n";
-                descr += formatSysLines(windowsMin) + "\n";
-            }
-            if (windowsRec.length > 0) {
-                descr += "[b]推荐配置[/b]\n";
-                descr += formatSysLines(windowsRec) + "\n";
-            }
-            descr += "\n";
-        }
-
-        if (screenshots.length > 0) {
-            descr += "【游戏截图】\n\n";
-            descr += screenshots.map(x => `[img]${x}[/img]`).join("\n") + "\n\n";
-        }
-
-
         // Start creating MediaInfo
         const info: MediaInfo = {
             site: 'steam',
@@ -268,7 +220,7 @@ export class SteamNormalizer implements Normalizer {
             playdate: [releaseDate],
             region: [],
             genre: tags,
-            language: [], // We can put simplified language list here if needed
+            language: [],
             duration: '',
             episodes: '',
             seasons: '',
@@ -283,13 +235,29 @@ export class SteamNormalizer implements Normalizer {
             awards: '',
             tags: tags,
 
+            screenshots: screenshots,
+
+            game_info: {
+                developer: dev ? [dev] : [],
+                publisher: pub ? [pub] : [],
+                links: {
+                    linkbar: linkbar,
+                    steam: `https://store.steampowered.com/app/${data.sid}`
+                },
+                ui_lang: uiAndSubLangs,
+                audio_lang: fullAudioLangs
+            },
+
             extra: {
                 steam_id: data.sid,
-                linkbar: linkbar,
                 languages_raw: languagesRaw,
                 sysreq: sysreq,
-                screenshots: screenshots,
-                descr_bbcode: descr.trim() // Identify where to put the full formatted description. Legacy put it in `format`. We put it here for Formatter to use.
+                windows_min: windowsMin,
+                windows_rec: windowsRec,
+                type_line: typeLine,
+                dev_line: devLine,
+                pub_line: pubLine,
+                release_line: releaseLine
             }
         };
 

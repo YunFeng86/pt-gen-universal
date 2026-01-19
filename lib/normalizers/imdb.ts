@@ -47,27 +47,11 @@ export class ImdbNormalizer implements Normalizer {
         const datePublished = jsonLd.datePublished || '';
         const rating = jsonLd.aggregateRating?.ratingValue || 0;
         const votes = jsonLd.aggregateRating?.ratingCount || 0;
-        const imdbRatingStr = `${rating}/10 from ${votes} users`;
+
         const imdbLink = `https://www.imdb.com/title/${data.imdb_id}/`;
         const poster = jsonLd.image || '';
         const description = jsonLd.description || '';
         const duration = jsonLd.duration || '';
-
-        // Generate BBCode Format
-        let descr = "";
-        if (poster) descr += `[img]${poster}[/img]\n\n`;
-        if (name) descr += `Title: ${name}\n`;
-        if (keywords.length > 0) descr += `Keywords: ${keywords.join(", ")}\n`;
-        if (datePublished) descr += `Date Published: ${datePublished}\n`;
-        if (rating) descr += `IMDb Rating: ${imdbRatingStr}\n`;
-        descr += `IMDb Link: ${imdbLink}\n`;
-        if (directors.length > 0) descr += `Directors: ${directors.join(" / ")}\n`;
-        if (creators.length > 0) descr += `Creators: ${creators.join(" / ")}\n`;
-        if (actors.length > 0) descr += `Actors: ${actors.join(" / ")}\n`;
-
-        if (description) {
-            descr += `\nIntroduction\n    ${description.replace(/\n/g, "\n" + "　".repeat(2))}\n`;
-        }
 
         const info: MediaInfo = {
             site: 'imdb',
@@ -102,15 +86,13 @@ export class ImdbNormalizer implements Normalizer {
 
             imdb_id: data.imdb_id,
             imdb_link: imdbLink,
-            imdb_rating_average: rating,
-            imdb_votes: votes,
-            imdb_rating: imdbRatingStr,
+            imdb_rating_average: rating || 0,
+            imdb_votes: votes || 0,
 
             extra: {
                 details: data.details,
                 reviews: reviews,
-                metascore: metascore,
-                descr_bbcode: descr.trim()
+                metascore: metascore
             }
         };
 
