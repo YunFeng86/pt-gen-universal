@@ -8,8 +8,8 @@
 
 - **跨平台支持**：Cloudflare Workers / Node.js / Bun 三种运行时
 - **开发体验提升**：本地秒启动，支持热重载
-- **向后兼容**：旧 API 格式完全兼容（自动重定向）
-- **TypeScript 重构**：核心逻辑采用 TypeScript 编写，更稳健
+- **API V2**：标准化的 JSON 响应，原生支持 JSON/BBCode/Markdown 多种输出格式
+- **TypeScript 重构**：核心逻辑完全采用 TypeScript 编写，类型安全
 - **三层架构**：Scraper / Normalizer / Formatter 解耦设计
 
 ## 快速开始
@@ -49,7 +49,7 @@ npm run deploy
 
 ### Node.js（本地开发/VPS 部署）
 
-**环境要求：Node.js v20.6.0+**（使用内置的 `--env-file` 支持）
+**环境要求：Node.js v20.6.0+**（需要支持 `--env-file` 和顶级 await）
 
 ```bash
 # 克隆仓库
@@ -72,16 +72,7 @@ npm run dev:node
 
 开发模式默认访问：`http://localhost:3000`
 
-**旧版本 Node.js（< v20.6.0）：**
-如果使用旧版本 Node.js，需要手动导出环境变量或使用 `dotenv` 包：
-```bash
-# 方式一：手动导出（Linux/macOS）
-export $(cat .env | xargs) && node src/adapters/node.js
-
-# 方式二：安装 dotenv 并修改代码
-npm install dotenv
-# 在 src/adapters/node.js 顶部添加：import 'dotenv/config'
-```
+> **注意**：本项目已全面迁移至 TypeScript，直接运行 `node` 命令无法启动。请使用 `npm run` 脚本，它们会自动调用 `tsx` 加载器。
 
 ### Bun（高性能本地开发/VPS 部署）
 
@@ -116,7 +107,45 @@ npm run dev:bun
 
 ### API 端点
 
-#### API v1（当前稳定版）
+#### API v2（推荐）
+
+提供更规范的 JSON 响应和原生多格式支持。
+
+**简介生成（URL 模式）：**
+```
+GET /api/v2/info?url=https://movie.douban.com/subject/1292052/
+```
+
+**简介生成（POST 模式）：**
+```bash
+POST /api/v2/info
+Content-Type: application/json
+
+{
+  "url": "https://movie.douban.com/subject/1292052/",
+  "format": "bbcode"
+}
+```
+
+**简介生成（RESTful 模式）：**
+```
+GET /api/v2/info/douban/1292052
+```
+
+**资源搜索：**
+```
+GET /api/v2/search?q=肖申克&source=douban
+```
+
+**参数说明：**
+- `url`: 资源链接
+- `format`: 输出格式，可选 `json` (默认), `bbcode`, `markdown`
+- `q`: 搜索关键词
+- `source`: 搜索源 (默认 `douban`)
+
+#### API v1（遗留/兼容）
+
+> **注意**：建议新集成的应用使用 API v2。
 
 **资源搜索：**
 ```
@@ -307,15 +336,18 @@ INDIENOVA_COOKIE=your-indienova-cookie
 ```
 pt-gen-universal/
 ├── src/
-│   ├── app.js                 # 核心业务逻辑（平台无关）
+│   ├── app.ts                 # 核心业务逻辑（平台无关）
 │   ├── storage/               # 存储抽象层
-│   │   ├── interface.js       # 存储接口定义
-│   │   ├── cloudflare.js      # CF KV 适配器
-│   │   └── memory.js          # 内存适配器（Node.js/Bun）
-│   └── adapters/              # 平台适配器
-│       ├── cloudflare.js      # CF Workers 入口
-│       ├── node.js            # Node.js 入口
-│       └── bun.js             # Bun 入口
+│   │   ├── interface.ts       # 存储接口定义
+│   │   ├── cloudflare.ts      # CF KV 适配器
+│   │   └── memory.ts          # 内存适配器（Node.js/Bun）
+│   ├── adapters/              # 平台适配器
+│   │   ├── cloudflare.ts      # CF Workers 入口
+│   │   ├── node.ts            # Node.js 入口
+│   │   └── bun.ts             # Bun 入口
+│   └── controllers/           # API 控制器
+│       ├── v1.ts              # V1 接口逻辑
+│       └── v2.ts              # V2 接口逻辑
 ├── lib/                       # 站点处理模块
 │   ├── scrapers/              # 数据抓取层
 │   ├── normalizers/           # 数据清洗层
@@ -323,6 +355,7 @@ pt-gen-universal/
 │   ├── orchestrator.ts        # 核心控制器
 │   ├── types/                 # 类型定义
 │   ├── const.ts               # 常量定义
+│   ├── errors.ts              # 错误处理
 │   └── utils/                 # 工具函数
 ├── index.html                 # Web UI
 ├── package.json
