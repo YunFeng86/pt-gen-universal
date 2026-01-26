@@ -19,39 +19,40 @@ export class V2Controller {
     }
 
     async handleInfo(c: Context) {
-        let url: string | undefined;
-        let site: string | undefined;
-        let sid: string | undefined;
-        let format = 'bbcode';
+        // Default to JSON for API v2. (Older code defaulted to bbcode; that conflicted with README.)
+        let format = 'json';
 
-        // 1. Try to get params from POST body
+        // Query params are always available (GET and POST).
+        const queryUrl = c.req.query('url');
+        const querySite = c.req.query('site');
+        const querySid = c.req.query('sid');
+        const queryFormat = c.req.query('format');
+        if (queryFormat) format = queryFormat;
+
+        // RESTful path params (if route matches /api/v2/info/:site/:sid)
+        const pathSite = c.req.param('site');
+        const pathSid = c.req.param('sid');
+
+        // POST JSON body (highest priority for url/site/sid; format can override query)
+        let bodyUrl: string | undefined;
+        let bodySite: string | undefined;
+        let bodySid: string | undefined;
         if (c.req.method === 'POST') {
             try {
                 const body = await c.req.json();
-                url = body.url;
-                site = body.site;
-                sid = body.sid;
-                if (typeof body.format === 'string') format = body.format;
-            } catch (e) {
-                // Invalid JSON body
-                throw new AppError(ErrorCode.INVALID_PARAM, "Invalid JSON body");
+                if (typeof body?.url === 'string') bodyUrl = body.url;
+                if (typeof body?.site === 'string') bodySite = body.site;
+                if (typeof body?.sid === 'string') bodySid = body.sid;
+                if (typeof body?.format === 'string') format = body.format;
+            } catch {
+                throw new AppError(ErrorCode.INVALID_PARAM, 'Invalid JSON body');
             }
         }
 
-        // 2. Try to get params from Path (RESTful)
-        const pathSite = c.req.param('site');
-        const pathSid = c.req.param('sid');
-        if (pathSite && pathSid) {
-            site = pathSite;
-            sid = pathSid;
-        }
-
-        // 3. Fallback to Query Params
-        if (!url && !site && !sid) {
-            url = c.req.query('url');
-            const queryFormat = c.req.query('format');
-            if (queryFormat) format = queryFormat; // Query overrides default
-        }
+        // Resolve effective input. Precedence: body > path > query for site/sid; body > query for url.
+        let url: string | undefined = bodyUrl ?? queryUrl;
+        let site: string | undefined = bodySite ?? pathSite ?? querySite;
+        let sid: string | undefined = bodySid ?? pathSid ?? querySid;
 
         // Validation
         if (!url && (!site || !sid)) {
@@ -113,6 +114,10 @@ export class V2Controller {
     }
 
     async handleSearch(c: Context) {
+        if (this.config.disableSearch) {
+            throw new AppError(ErrorCode.FEATURE_DISABLED, 'search disabled');
+        }
+
         const query = c.req.query('q');
         const source = c.req.query('source') || 'douban';
 
@@ -151,6 +156,15 @@ export class V2Controller {
 
     private mapError(message: string): AppError {
         const normalized = message.toLowerCase();
+
+        // Invalid/unsupported sources should be treated as client errors.
+        if (
+            normalized.includes('scraper not found:') ||
+            normalized.includes('normalizer not found:') ||
+            normalized.includes('formatter not found:')
+        ) {
+            return new AppError(ErrorCode.INVALID_PARAM, message);
+        }
 
         if (message === NONE_EXIST_ERROR || normalized.includes('not found')) {
             return new AppError(ErrorCode.TARGET_NOT_FOUND, message);

@@ -133,7 +133,14 @@ export function createApp(storage: any, config: AppConfig = {}) {
       const isV2Success = data.meta && !data.error; // V2 success usually has meta and no error
 
       if (isV1Success || isV2Success || (!data.error && !data.success)) {
-        await storage.put(cacheKey, JSON.stringify(data), cacheTTL)
+        const write = storage.put(cacheKey, JSON.stringify(data), cacheTTL)
+        // In CF Workers, avoid delaying the response on cache writes when possible.
+        const execCtx = (c as any).executionCtx
+        if (execCtx && typeof execCtx.waitUntil === 'function') {
+          execCtx.waitUntil(write)
+        } else {
+          await write
+        }
       }
     }
   })
@@ -164,6 +171,9 @@ export function createApp(storage: any, config: AppConfig = {}) {
     if (site) {
       const sid = c.req.query('sid')
       const apikey = c.req.query('apikey')
+      if (!sid) {
+        return c.json({ error: 'Missing sid' }, 400)
+      }
       const apikeyParam = apikey ? `?apikey=${apikey}` : ''
       return c.redirect(`/api/v1/info/${site}/${sid}${apikeyParam}`)
     }

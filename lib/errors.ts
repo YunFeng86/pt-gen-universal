@@ -1,6 +1,7 @@
 export enum ErrorCode {
     INVALID_PARAM = "INVALID_PARAM",
     AUTH_FAILED = "AUTH_FAILED",
+    FEATURE_DISABLED = "FEATURE_DISABLED",
     TARGET_NOT_FOUND = "TARGET_NOT_FOUND",
     TARGET_BLOCKING = "TARGET_BLOCKING",
     TARGET_TIMEOUT = "TARGET_TIMEOUT",
@@ -12,6 +13,7 @@ export enum ErrorCode {
 export const HTTP_STATUS: Record<ErrorCode, number> = {
     [ErrorCode.INVALID_PARAM]: 400,
     [ErrorCode.AUTH_FAILED]: 401,
+    [ErrorCode.FEATURE_DISABLED]: 403,
     [ErrorCode.TARGET_NOT_FOUND]: 404,
     [ErrorCode.TARGET_BLOCKING]: 502,
     [ErrorCode.TARGET_TIMEOUT]: 504,
