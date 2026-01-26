@@ -32,7 +32,9 @@ export function toAppError(err: unknown): AppError {
   }
 
   // Site-specific "not found" message used across this repo.
-  if (message === NONE_EXIST_ERROR || normalized.includes('not found')) {
+  // Avoid broad substring matching ("not found") because many parser errors include it
+  // (e.g. "JSON-LD script not found") and should be treated as INTERNAL_ERROR.
+  if (message === NONE_EXIST_ERROR) {
     return new AppError(ErrorCode.TARGET_NOT_FOUND, message);
   }
 
@@ -54,4 +56,3 @@ export function toAppError(err: unknown): AppError {
 
   return new AppError(ErrorCode.INTERNAL_ERROR, message);
 }
-

@@ -30,6 +30,7 @@ export default {
       cachedApp = createApp(storage, {
         apikey: env.APIKEY,
         disableSearch: parseBooleanEnv(env.DISABLE_SEARCH) ?? false,
+        enableDebug: parseBooleanEnv(env.ENABLE_DEBUG) ?? false,
         cacheTTL: parseNumberEnv(env.CACHE_TTL),
         htmlPage: page,
         tmdbApiKey: env.TMDB_API_KEY,

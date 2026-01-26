@@ -12,6 +12,39 @@ export interface Storage {
   delete(key: string): Promise<void>
 }
 
+// Cache key hashing: KV has key length limits; hashing also normalizes long/variable queries.
+async function sha256Hex(input: string): Promise<string> {
+  // Prefer WebCrypto (CF Workers / modern runtimes).
+  if (globalThis.crypto?.subtle) {
+    const data = new TextEncoder().encode(input)
+    const digest = await globalThis.crypto.subtle.digest('SHA-256', data)
+    return Array.from(new Uint8Array(digest))
+      .map((b) => b.toString(16).padStart(2, '0'))
+      .join('')
+  }
+
+  // Very old runtimes fallback: FNV-1a 32-bit (non-cryptographic).
+  // This should effectively never be used in supported targets, but avoids bundling Node built-ins.
+  let hash = 0x811c9dc5
+  for (let i = 0; i < input.length; i++) {
+    hash ^= input.charCodeAt(i)
+    // 32-bit FNV-1a prime multiplication
+    hash = Math.imul(hash, 0x01000193)
+  }
+  return (hash >>> 0).toString(16).padStart(8, '0')
+}
+
+function stableSearchString(url: URL): string {
+  // Make query order stable for better cache hit ratio.
+  const entries = Array.from(url.searchParams.entries())
+    .filter(([k]) => k !== 'apikey' && k !== 'debug')
+    .sort(([ak, av], [bk, bv]) => (ak === bk ? av.localeCompare(bv) : ak.localeCompare(bk)))
+  if (entries.length === 0) return ''
+  const sp = new URLSearchParams()
+  for (const [k, v] of entries) sp.append(k, v)
+  return `?${sp.toString()}`
+}
+
 // 读取 HTML 页面（兼容 Node.js 和 CF Workers）
 let page: string = ''
 
@@ -98,12 +131,12 @@ export function createApp(storage: Storage, config: AppConfig = {}) {
   }
 
   // 生成缓存键
-  function generateCacheKey(c: Context) {
+  async function generateCacheKey(c: Context) {
     const url = new URL(c.req.url)
-    url.searchParams.delete('apikey')
-    url.searchParams.delete('debug')
-    // Include method to avoid collisions (even though we only cache GET today).
-    return `${c.req.method}:${url.pathname}${url.search}`
+    const stableSearch = stableSearchString(url)
+    const rawKey = `${c.req.method}:${url.pathname}${stableSearch}`
+    const hashed = await sha256Hex(rawKey)
+    return `ptgen:v1:${hashed}`
   }
 
   // APIKEY 验证中间件
@@ -125,36 +158,51 @@ export function createApp(storage: Storage, config: AppConfig = {}) {
     // Only cache GET. POST (e.g. /api/v2/info JSON body) must never share cache keys.
     if (c.req.method !== 'GET') return next()
 
-    const cacheKey = generateCacheKey(c)
-    const cached = await storage.get(cacheKey)
+    let cacheKey: string | null = null
+    try {
+      cacheKey = await generateCacheKey(c)
+    } catch {
+      // If key generation fails for any reason, just bypass cache.
+      return next()
+    }
 
-    if (cached) {
-      try {
-        return c.json(JSON.parse(cached))
-      } catch {
-        await storage.delete(cacheKey)
+    try {
+      const cached = await storage.get(cacheKey)
+      if (cached) {
+        try {
+          return c.json(JSON.parse(cached))
+        } catch {
+          // Corrupted cache entry: best-effort delete.
+          try { await storage.delete(cacheKey) } catch { }
+        }
       }
+    } catch {
+      // Cache backend errors must not affect the main response.
     }
 
     await next()
 
     if (c.res.status === 200) {
-      const clonedRes = c.res.clone()
-      const data = await clonedRes.json()
-      // 如果数据中没有 error 字段，或者 success 为 true，则缓存
-      // 适配 V1 和 V2 的成功判断逻辑
-      const isV1Success = data.success === true;
-      const isV2Success = data.meta && !data.error; // V2 success usually has meta and no error
+      try {
+        const clonedRes = c.res.clone()
+        const data = await clonedRes.json()
+        // 如果数据中没有 error 字段，或者 success 为 true，则缓存
+        // 适配 V1 和 V2 的成功判断逻辑
+        const isV1Success = data.success === true;
+        const isV2Success = data.meta && !data.error; // V2 success usually has meta and no error
 
-      if (isV1Success || isV2Success || (!data.error && !data.success)) {
-        const write = storage.put(cacheKey, JSON.stringify(data), cacheTTL)
-        // In CF Workers, avoid delaying the response on cache writes when possible.
-        const execCtx = (c as any).executionCtx
-        if (execCtx && typeof execCtx.waitUntil === 'function') {
-          execCtx.waitUntil(write)
-        } else {
-          await write
+        if (isV1Success || isV2Success || (!data.error && !data.success)) {
+          const write = storage.put(cacheKey, JSON.stringify(data), cacheTTL)
+          // In CF Workers, avoid delaying the response on cache writes when possible.
+          const execCtx = (c as any).executionCtx
+          if (execCtx && typeof execCtx.waitUntil === 'function') {
+            execCtx.waitUntil(write)
+          } else {
+            await write
+          }
         }
+      } catch {
+        // Never let cache serialization/write failures break the response.
       }
     }
   })

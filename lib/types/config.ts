@@ -26,6 +26,7 @@ export interface AppConfig {
     // Worker Env Config
     apikey?: string;
     disableSearch?: boolean;
+    enableDebug?: boolean;
     htmlPage?: string;
     cacheTTL?: number;
 

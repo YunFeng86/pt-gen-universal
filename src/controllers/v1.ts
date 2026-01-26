@@ -95,7 +95,7 @@ export class V1Controller {
     }
 
     private handleError(c: Context, e: any) {
-        const debug = c.req.query('debug') === '1';
+        const debug = this.config.enableDebug === true && c.req.query('debug') === '1';
         const err_return: any = {
             error: `Internal Error, Please contact @${AUTHOR}. Exception: ${e.message}`
         };
