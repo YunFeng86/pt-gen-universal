@@ -33,4 +33,7 @@ export interface AppConfig {
     // 通用配置
     timeout?: number;
     proxyUrl?: string; // 可选的代理地址
+    // 是否允许在使用 proxyUrl 时转发敏感请求头（Cookie/Authorization）。
+    // 默认 false：避免将敏感信息泄露给不可信的中转服务。
+    proxyAllowSensitiveHeaders?: boolean;
 }

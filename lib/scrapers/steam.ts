@@ -21,8 +21,8 @@ export class SteamScraper implements Scraper {
         };
 
         const [pageResp, steamCnResp] = await Promise.all([
-            fetchWithTimeout(steamUrl, { headers, redirect: 'manual' }, timeoutMs),
-            fetchWithTimeout(`https://steamdb.keylol.com/app/${id}/data.js?v=38`, {}, timeoutMs)
+            fetchWithTimeout(steamUrl, { headers, redirect: 'manual' }, timeoutMs, config),
+            fetchWithTimeout(`https://steamdb.keylol.com/app/${id}/data.js?v=38`, {}, timeoutMs, config)
         ]);
 
         if (pageResp.status === 302) {
@@ -79,7 +79,7 @@ export class SteamScraper implements Scraper {
             DEFAULT_TIMEOUT_MS;
         const url = `https://store.steampowered.com/api/storesearch/?term=${encodeURIComponent(query)}&l=schinese&cc=CN`;
         try {
-            const response = await fetchWithTimeout(url, {}, timeoutMs);
+            const response = await fetchWithTimeout(url, {}, timeoutMs, config);
             if (response.ok) {
                 const json = await response.json();
                 if (json.items) {

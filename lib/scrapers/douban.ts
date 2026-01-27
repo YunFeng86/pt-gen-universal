@@ -34,7 +34,8 @@ export class DoubanScraper implements Scraper {
         const { html, blocked, status } = await this.fetchSubjectHtml(
             id,
             headers,
-            timeoutMs
+            timeoutMs,
+            config
         );
 
         if (blocked) {
@@ -129,7 +130,8 @@ export class DoubanScraper implements Scraper {
                     query
                 )}`,
                 { headers },
-                timeoutMs
+                timeoutMs,
+                config
             );
             const json = await resp.json();
 
@@ -184,7 +186,8 @@ export class DoubanScraper implements Scraper {
             const resp = await fetchWithTimeout(
                 'https://movie.douban.com/',
                 { headers: baseHeaders, redirect: 'manual' },
-                timeoutMs
+                timeoutMs,
+                config
             );
             return this.extractBidCookieFromResponse(resp);
         } catch {
@@ -213,7 +216,8 @@ export class DoubanScraper implements Scraper {
     private async fetchSubjectHtml(
         sid: string,
         headers: Record<string, string>,
-        timeoutMs: number
+        timeoutMs: number,
+        config: AppConfig
     ): Promise<{ html: string; blocked: boolean; url: string; status?: number }> {
         const candidateUrls = [
             `https://movie.douban.com/subject/${sid}/`,
@@ -226,7 +230,7 @@ export class DoubanScraper implements Scraper {
         for (const url of candidateUrls) {
             try {
                 await rateLimiter.acquire('douban', 3000);
-                const resp = await fetchWithTimeout(url, { headers }, timeoutMs);
+                const resp = await fetchWithTimeout(url, { headers }, timeoutMs, config);
                 const text = await resp.text();
 
                 if (this.looksLikeSecChallenge(resp, text)) {
@@ -270,7 +274,7 @@ export class DoubanScraper implements Scraper {
         if (config.doubanIncludeAwards === false) return null;
 
         await rateLimiter.acquire('douban', 2000);
-        const resp = await fetchWithTimeout(`https://movie.douban.com/subject/${sid}/awards`, { headers }, timeoutMs);
+        const resp = await fetchWithTimeout(`https://movie.douban.com/subject/${sid}/awards`, { headers }, timeoutMs, config);
         if (!resp.ok) return null;
 
         const raw = await resp.text();
@@ -287,7 +291,8 @@ export class DoubanScraper implements Scraper {
         const resp = await fetchWithTimeout(
             `https://p.media-imdb.com/static-content/documents/v1/title/${imdbId}/ratings%3Fjsonp=imdb.rating.run:imdb.api.title.ratings/data.json`,
             {},
-            timeoutMs
+            timeoutMs,
+            config
         );
         if (!resp.ok) return null;
         const raw = await resp.text();

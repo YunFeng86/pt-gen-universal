@@ -16,8 +16,8 @@ export class BangumiScraper implements Scraper {
         const bangumiLink = `https://bgm.tv/subject/${id}`;
 
         const [mainResp, charResp] = await Promise.all([
-            fetchWithTimeout(bangumiLink, {}, timeoutMs),
-            fetchWithTimeout(`${bangumiLink}/characters`, {}, timeoutMs)
+            fetchWithTimeout(bangumiLink, {}, timeoutMs, config),
+            fetchWithTimeout(`${bangumiLink}/characters`, {}, timeoutMs, config)
         ]);
 
         if (!mainResp.ok) {
@@ -51,7 +51,7 @@ export class BangumiScraper implements Scraper {
             config.timeout ??
             DEFAULT_TIMEOUT_MS;
         const url = `https://api.bgm.tv/search/subject/${encodeURIComponent(query)}?responseGroup=large`;
-        const response = await fetchWithTimeout(url, {}, timeoutMs);
+        const response = await fetchWithTimeout(url, {}, timeoutMs, config);
 
         if (!response.ok) {
             throw new Error(`Bangumi search failed: ${response.status}`);

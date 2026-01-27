@@ -293,6 +293,8 @@ cp .env.example .env
 APIKEY=your-api-key
 DISABLE_SEARCH=false
 PORT=3000
+PROXY_URL=
+PROXY_ALLOW_SENSITIVE_HEADERS=false
 DOUBAN_COOKIE=your-douban-cookie
 INDIENOVA_COOKIE=your-indienova-cookie
 ```
@@ -304,6 +306,8 @@ INDIENOVA_COOKIE=your-indienova-cookie
 | `APIKEY` | API 访问密钥。可用 query `?apikey={APIKEY}`，或 header `X-API-Key: {APIKEY}` / `Authorization: Bearer {APIKEY}` |
 | `DISABLE_SEARCH` | 设置为 `"true"` 时禁用搜索功能 |
 | `CACHE_TTL` | 缓存过期时间（秒），默认 172800（2天）。设置为 0 禁用缓存（仅缓存 GET /api/*） |
+| `PROXY_URL` | 可选：抓取中转（URL relay），用于网络受限环境。支持前缀模式或模板模式（`{url}` / `{urlEncoded}`），详见 `.env.example` |
+| `PROXY_ALLOW_SENSITIVE_HEADERS` | 可选：允许在使用 `PROXY_URL` 时转发敏感请求头（Cookie/Authorization）。默认 `false` 更安全；仅在你完全信任/自建中转时开启 |
 | `TMDB_API_KEY` | TMDB API 密钥，用于访问 TMDB 资源。获取地址：https://www.themoviedb.org/settings/api |
 | `DOUBAN_COOKIE` | 豆瓣 Cookie，用于访问登录可见资源 |
 | `INDIENOVA_COOKIE` | indienova Cookie（[#15](https://github.com/Rhilip/pt-gen-universal/issues/15)） |

@@ -9,13 +9,13 @@ import { NONE_EXIST_ERROR } from '../utils/error';
 const DEFAULT_TIMEOUT_MS = 10_000;
 
 export class GogScraper implements Scraper {
-    private async resolveGogId(sid: string, timeoutMs: number): Promise<string> {
+    private async resolveGogId(sid: string, timeoutMs: number, config: AppConfig): Promise<string> {
         if (/^\d+$/.test(sid)) {
             return sid;
         }
 
         const url = `https://catalog.gog.com/v1/catalog?query=${encodeURIComponent(sid)}`;
-        const response = await fetchWithTimeout(url, {}, timeoutMs);
+        const response = await fetchWithTimeout(url, {}, timeoutMs, config);
 
         if (!response.ok) {
             throw new Error(`GOG Catalog API returned status ${response.status}`);
@@ -40,13 +40,13 @@ export class GogScraper implements Scraper {
             DEFAULT_TIMEOUT_MS;
         let gogId: string;
         try {
-            gogId = await this.resolveGogId(id, timeoutMs);
+            gogId = await this.resolveGogId(id, timeoutMs, config);
         } catch (e: any) {
             throw new Error(e.message || NONE_EXIST_ERROR);
         }
 
         const apiUrl = `https://api.gog.com/products/${gogId}?expand=description,screenshots,videos`;
-        const apiResp = await fetchWithTimeout(apiUrl, {}, timeoutMs);
+        const apiResp = await fetchWithTimeout(apiUrl, {}, timeoutMs, config);
 
         if (apiResp.status === 404) {
             throw new Error(NONE_EXIST_ERROR);
@@ -65,7 +65,7 @@ export class GogScraper implements Scraper {
                 headers: {
                     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
                 }
-            }, timeoutMs);
+            }, timeoutMs, config);
 
             if (pageResp.ok) {
                 storeHtml = await pageResp.text();
@@ -88,7 +88,7 @@ export class GogScraper implements Scraper {
             DEFAULT_TIMEOUT_MS;
         const url = `https://catalog.gog.com/v1/catalog?query=${encodeURIComponent(query)}`;
         try {
-            const response = await fetchWithTimeout(url, {}, timeoutMs);
+            const response = await fetchWithTimeout(url, {}, timeoutMs, config);
             if (response.ok) {
                 const json = await response.json();
                 if (json.products) {

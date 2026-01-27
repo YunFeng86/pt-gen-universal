@@ -66,6 +66,7 @@ describe('TMDB POC Integration', () => {
         expect(fetchSpy).toHaveBeenCalledWith(
             expect.stringContaining('api.themoviedb.org/3/movie/101'),
             expect.anything(),
+            expect.anything(),
             expect.anything()
         );
     });
@@ -98,6 +99,7 @@ describe('TMDB POC Integration', () => {
 
         expect(fetchSpy).toHaveBeenCalledWith(
             expect.stringContaining('/search/multi'),
+            expect.anything(),
             expect.anything(),
             expect.anything()
         );

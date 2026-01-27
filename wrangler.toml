@@ -16,6 +16,8 @@ kv_namespaces = [
 [vars]
 # DISABLE_SEARCH = "false"
 # CACHE_TTL = "172800"  # 缓存过期时间（秒），默认 172800（2天）
+# PROXY_URL = ""        # 可选：抓取中转（URL relay），详见 .env.example
+# PROXY_ALLOW_SENSITIVE_HEADERS = "false" # 可选：是否允许转发 Cookie/Authorization 到中转
 
 # 日志配置
 [observability.logs]

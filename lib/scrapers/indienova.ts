@@ -20,7 +20,7 @@ export class IndienovaScraper implements Scraper {
             headers['Cookie'] = config.indienovaCookie;
         }
 
-        const response = await fetchWithTimeout(url, { headers }, timeoutMs);
+        const response = await fetchWithTimeout(url, { headers }, timeoutMs, config);
         if (!response.ok) {
             if (response.status === 404) {
                 throw new Error(NONE_EXIST_ERROR);

@@ -1,6 +1,7 @@
 import { createApp } from '../app'
 import { CloudflareKVStorage } from '../storage/cloudflare'
 import page from '../../index.html'
+import { parseBooleanEnv, parseNumberEnv } from '../utils/env'
 
 /**
  * Cloudflare Workers 入口
@@ -8,20 +9,6 @@ import page from '../../index.html'
 
 // 缓存应用实例（只初始化一次）
 let cachedApp: any = null
-
-function parseBooleanEnv(value: unknown): boolean | undefined {
-  if (value === undefined || value === null) return undefined
-  const s = String(value).trim().toLowerCase()
-  if (s === 'true' || s === '1' || s === 'yes' || s === 'y') return true
-  if (s === 'false' || s === '0' || s === 'no' || s === 'n') return false
-  return undefined
-}
-
-function parseNumberEnv(value: unknown): number | undefined {
-  if (value === undefined || value === null || value === '') return undefined
-  const n = Number(value)
-  return Number.isFinite(n) ? n : undefined
-}
 
 export default {
   async fetch(request: Request, env: any, ctx: any) {
@@ -33,6 +20,9 @@ export default {
         enableDebug: parseBooleanEnv(env.ENABLE_DEBUG) ?? false,
         cacheTTL: parseNumberEnv(env.CACHE_TTL),
         htmlPage: page,
+        proxyUrl: env.PROXY_URL,
+        proxyAllowSensitiveHeaders:
+          parseBooleanEnv(env.PROXY_ALLOW_SENSITIVE_HEADERS) ?? false,
         tmdbApiKey: env.TMDB_API_KEY,
         doubanCookie: env.DOUBAN_COOKIE,
         indienovaCookie: env.INDIENOVA_COOKIE

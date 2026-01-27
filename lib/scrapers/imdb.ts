@@ -32,8 +32,8 @@ export class ImdbScraper implements Scraper {
 
         // Fetch Main Page and Release Info Page concurrently
         const [mainResp, releaseResp] = await Promise.all([
-            fetchWithTimeout(imdbUrl, { headers }, timeoutMs),
-            fetchWithTimeout(`${imdbUrl}releaseinfo`, { headers }, timeoutMs)
+            fetchWithTimeout(imdbUrl, { headers }, timeoutMs, config),
+            fetchWithTimeout(`${imdbUrl}releaseinfo`, { headers }, timeoutMs, config)
         ]);
 
         if (!mainResp.ok) {
@@ -136,7 +136,8 @@ export class ImdbScraper implements Scraper {
         const response = await fetchWithTimeout(
             url,
             headers ? { headers } : {},
-            timeoutMs
+            timeoutMs,
+            config
         );
         if (!response.ok) {
             throw new Error(`IMDb search request failed: ${response.status}`);
