@@ -93,6 +93,25 @@ describe('API v2 controller contract', () => {
     expect(json.data.format).toContain('◎译')
   })
 
+  it('allows POST /info with only query params and empty body', async () => {
+    const v2 = new V2Controller(
+      {
+        getMediaInfo: async () => fakeInfo,
+        search: async () => [],
+      } as any,
+      {}
+    )
+    const app = makeTestApp(v2)
+
+    const res = await app.request(
+      'http://localhost/api/v2/info?site=douban&sid=1292052',
+      { method: 'POST' }
+    )
+    expect(res.status).toBe(200)
+    const json = await res.json()
+    expect(json.data.site).toBe('douban')
+  })
+
   it('reads format from query for RESTful path routes', async () => {
     const v2 = new V2Controller(
       {

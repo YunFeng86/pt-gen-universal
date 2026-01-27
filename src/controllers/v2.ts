@@ -33,19 +33,39 @@ export class V2Controller {
         const pathSite = c.req.param('site');
         const pathSid = c.req.param('sid');
 
-        // POST JSON body (highest priority for url/site/sid; format can override query)
+        // POST body (highest priority for url/site/sid; format can override query)
         let bodyUrl: string | undefined;
         let bodySite: string | undefined;
         let bodySid: string | undefined;
         if (c.req.method === 'POST') {
+            // Hono/Request will throw on empty body if we call c.req.json() unconditionally.
+            // Allow POST with only query params; only treat it as "invalid JSON" when a non-empty
+            // body looks like JSON but can't be parsed.
+            const contentType = c.req.header('content-type') || '';
+            let rawBody = '';
             try {
-                const body = await c.req.json();
-                if (typeof body?.url === 'string') bodyUrl = body.url;
-                if (typeof body?.site === 'string') bodySite = body.site;
-                if (typeof body?.sid === 'string') bodySid = body.sid;
-                if (typeof body?.format === 'string') format = body.format;
+                rawBody = await c.req.text();
             } catch {
-                throw new AppError(ErrorCode.INVALID_PARAM, 'Invalid JSON body');
+                rawBody = '';
+            }
+
+            const trimmed = rawBody.trim();
+            if (trimmed) {
+                const ct = contentType.toLowerCase();
+                const declaredJson = ct.includes('application/json') || ct.includes('+json');
+                const looksLikeJson = /^[\s]*[{\[]/.test(rawBody);
+
+                if (declaredJson || looksLikeJson || ct === '') {
+                    try {
+                        const body = JSON.parse(rawBody);
+                        if (typeof body?.url === 'string') bodyUrl = body.url;
+                        if (typeof body?.site === 'string') bodySite = body.site;
+                        if (typeof body?.sid === 'string') bodySid = body.sid;
+                        if (typeof body?.format === 'string') format = body.format;
+                    } catch {
+                        throw new AppError(ErrorCode.INVALID_PARAM, 'Invalid JSON body');
+                    }
+                }
             }
         }
 

@@ -133,6 +133,9 @@ export function createApp(storage: Storage, config: AppConfig = {}) {
     if (cacheTTL === 0) return next()
     // Only cache GET. POST (e.g. /api/v2/info JSON body) must never share cache keys.
     if (c.req.method !== 'GET') return next()
+    // Debug responses should never be cached, and should never be served from cache.
+    // `debug` is intentionally excluded from the cache key for hit ratio, so we must bypass.
+    if (c.req.query('debug') === '1') return next()
 
     let cacheKey: string | null = null
     try {
@@ -200,7 +203,9 @@ export function createApp(storage: Storage, config: AppConfig = {}) {
       const source = c.req.query('source') || 'douban'
       const apikey = c.req.query('apikey')
       const apikeyParam = apikey ? `&apikey=${apikey}` : ''
-      return c.redirect(`/api/v1/search?q=${encodeURIComponent(search)}&source=${source}${apikeyParam}`)
+      return c.redirect(
+        `/api/v1/search?q=${encodeURIComponent(search)}&source=${encodeURIComponent(source)}${apikeyParam}`
+      )
     }
     if (url) {
       const apikey = c.req.query('apikey')
@@ -214,7 +219,9 @@ export function createApp(storage: Storage, config: AppConfig = {}) {
         return c.json({ error: 'Missing sid' }, 400)
       }
       const apikeyParam = apikey ? `?apikey=${apikey}` : ''
-      return c.redirect(`/api/v1/info/${site}/${sid}${apikeyParam}`)
+      return c.redirect(
+        `/api/v1/info/${encodeURIComponent(site)}/${encodeURIComponent(sid)}${apikeyParam}`
+      )
     }
   })
 
