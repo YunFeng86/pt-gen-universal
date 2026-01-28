@@ -87,22 +87,19 @@ export class GogScraper implements Scraper {
             config.timeout ??
             DEFAULT_TIMEOUT_MS;
         const url = `https://catalog.gog.com/v1/catalog?query=${encodeURIComponent(query)}`;
-        try {
-            const response = await fetchWithTimeout(url, {}, timeoutMs, config);
-            if (response.ok) {
-                const json = await response.json();
-                if (json.products) {
-                    return json.products.map((item: any) => ({
-                        provider: 'gog',
-                        id: item.slug, // Use slug as ID for better user readability? Or ID? Legacy gen_gog accepts slug.
-                        // Scraper.fetch handles slug or ID.
-                        title: item.title,
-                        link: `https://www.gog.com/en/game/${item.slug}`,
-                        poster: item.cover_horizontal // or boxArtImage if available in this API? Catalog API returns simplified object.
-                    }));
-                }
-            }
-        } catch { }
-        return [];
+        const response = await fetchWithTimeout(url, {}, timeoutMs, config);
+        if (!response.ok) {
+            throw new Error(`GOG search failed: ${response.status}`);
+        }
+
+        const json = await response.json();
+        const products = Array.isArray((json as any)?.products) ? (json as any).products : [];
+        return products.map((item: any) => ({
+            provider: 'gog',
+            id: item.slug, // Use slug as ID for better user readability; fetch() supports slug or numeric id.
+            title: item.title,
+            link: `https://www.gog.com/en/game/${item.slug}`,
+            poster: item.cover_horizontal
+        }));
     }
 }

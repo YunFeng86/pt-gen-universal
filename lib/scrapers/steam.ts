@@ -78,21 +78,20 @@ export class SteamScraper implements Scraper {
             config.timeout ??
             DEFAULT_TIMEOUT_MS;
         const url = `https://store.steampowered.com/api/storesearch/?term=${encodeURIComponent(query)}&l=schinese&cc=CN`;
-        try {
-            const response = await fetchWithTimeout(url, {}, timeoutMs, config);
-            if (response.ok) {
-                const json = await response.json();
-                if (json.items) {
-                    return json.items.map((item: any) => ({
-                        provider: 'steam',
-                        id: String(item.id),
-                        title: item.name,
-                        link: `https://store.steampowered.com/app/${item.id}`,
-                        poster: item.tiny_image
-                    }));
-                }
-            }
-        } catch { }
-        return [];
+        const response = await fetchWithTimeout(url, {}, timeoutMs, config);
+        if (!response.ok) {
+            throw new Error(`Steam search failed: ${response.status} ${response.statusText}`);
+        }
+
+        const json = await response.json();
+        const items = Array.isArray((json as any)?.items) ? (json as any).items : [];
+
+        return items.map((item: any) => ({
+            provider: 'steam',
+            id: String(item.id),
+            title: item.name,
+            link: `https://store.steampowered.com/app/${item.id}`,
+            poster: item.tiny_image
+        }));
     }
 }

@@ -9,7 +9,10 @@ import { parseBooleanEnv, parseNumberEnv } from '../utils/env'
  */
 
 // 创建内存存储适配器
-const storage = new MemoryStorage()
+const storage = new MemoryStorage({
+  maxEntries: parseNumberEnv(process.env.CACHE_MAX_ENTRIES),
+  sweepIntervalMs: parseNumberEnv(process.env.CACHE_SWEEP_INTERVAL_MS)
+})
 
 function loadHtmlPage(): string | undefined {
   try {

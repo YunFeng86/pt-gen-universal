@@ -122,32 +122,38 @@ export class DoubanScraper implements Scraper {
             ? { ...baseHeaders, Cookie: cookieHeader }
             : baseHeaders;
 
-        try {
-            await rateLimiter.acquire('douban', 3000);
+        await rateLimiter.acquire('douban', 3000);
 
-            const resp = await fetchWithTimeout(
-                `https://movie.douban.com/j/subject_suggest?q=${encodeURIComponent(
-                    query
-                )}`,
-                { headers },
-                timeoutMs,
-                config
-            );
-            const json = await resp.json();
+        const resp = await fetchWithTimeout(
+            `https://movie.douban.com/j/subject_suggest?q=${encodeURIComponent(
+                query
+            )}`,
+            { headers },
+            timeoutMs,
+            config
+        );
 
-            return (json as any[]).map((d) => ({
-                provider: 'douban',
-                id: d.id,
-                title: d.title,
-                subtitle: d.sub_title,
-                year: d.year,
-                type: d.type,
-                link: `https://movie.douban.com/subject/${d.id}/`,
-                poster: d.img,
-            }));
-        } catch (e) {
-            return [];
+        if (!resp.ok) {
+            // Douban search endpoint can be blocked or rate-limited.
+            const body = await resp.text().catch(() => '');
+            if (this.looksLikeSecChallenge(resp, body)) {
+                throw new Error('Blocked by Douban anti-bot (sec.douban.com).');
+            }
+            throw new Error(`Douban search failed: ${resp.status} ${resp.statusText}`);
         }
+
+        const json = await resp.json();
+
+        return (json as any[]).map((d) => ({
+            provider: 'douban',
+            id: d.id,
+            title: d.title,
+            subtitle: d.sub_title,
+            year: d.year,
+            type: d.type,
+            link: `https://movie.douban.com/subject/${d.id}/`,
+            poster: d.img,
+        }));
     }
 
     private buildHeaders(config: AppConfig): Record<string, string> {

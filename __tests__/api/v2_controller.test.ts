@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { Hono } from 'hono'
 import { V2Controller } from '../../src/controllers/v2'
-import { AppError } from '../../lib/errors'
+import { AppError, ErrorCode } from '../../lib/errors'
 
 function makeTestApp(v2: V2Controller) {
   const app = new Hono()
@@ -161,6 +161,26 @@ describe('API v2 controller contract', () => {
 
     const res = await app.request(
       'http://localhost/api/v2/search?q=test&source=douban'
+    )
+    expect(res.status).toBe(403)
+    const json = await res.json()
+    expect(json.error.code).toBe('FEATURE_DISABLED')
+  })
+
+  it('returns FEATURE_DISABLED (403) when a site does not support search', async () => {
+    const v2 = new V2Controller(
+      {
+        getMediaInfo: async () => fakeInfo,
+        search: async () => {
+          throw new AppError(ErrorCode.FEATURE_DISABLED, 'search not supported for site: indienova')
+        },
+      } as any,
+      {}
+    )
+    const app = makeTestApp(v2)
+
+    const res = await app.request(
+      'http://localhost/api/v2/search?q=test&source=indienova'
     )
     expect(res.status).toBe(403)
     const json = await res.json()

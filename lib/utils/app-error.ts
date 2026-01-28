@@ -1,11 +1,15 @@
 import { AppError, ErrorCode } from '../errors';
 import { NONE_EXIST_ERROR } from './error';
 
+type UnknownRecord = Record<string, any>;
+
+function isRecord(v: unknown): v is UnknownRecord {
+  return Boolean(v) && typeof v === 'object';
+}
+
 function messageFromUnknown(err: unknown): string {
   if (typeof err === 'string') return err;
-  if (err && typeof err === 'object' && 'message' in err && typeof (err as any).message === 'string') {
-    return (err as any).message;
-  }
+  if (isRecord(err) && typeof err.message === 'string') return err.message;
   try {
     return JSON.stringify(err);
   } catch {
@@ -13,11 +17,47 @@ function messageFromUnknown(err: unknown): string {
   }
 }
 
+function unwrapCauses(err: unknown, maxDepth = 5): unknown[] {
+  const chain: unknown[] = [];
+  let cur: unknown = err;
+  for (let i = 0; i < maxDepth; i++) {
+    chain.push(cur);
+    if (!isRecord(cur) || !('cause' in cur)) break;
+    cur = (cur as any).cause;
+    if (!cur) break;
+  }
+  return chain;
+}
+
+function statusFromUnknown(err: unknown): number | undefined {
+  if (!isRecord(err)) return undefined;
+  const status = (err as any).status;
+  return typeof status === 'number' && Number.isFinite(status) ? status : undefined;
+}
+
+function codeFromUnknown(err: unknown): string | undefined {
+  if (!isRecord(err)) return undefined;
+  const code = (err as any).code || (err as any).errno;
+  return typeof code === 'string' ? code : undefined;
+}
+
+function nameFromUnknown(err: unknown): string | undefined {
+  if (!isRecord(err)) return undefined;
+  const name = (err as any).name;
+  return typeof name === 'string' ? name : undefined;
+}
+
 export function toAppError(err: unknown): AppError {
   if (err instanceof AppError) return err;
 
+  const chain = unwrapCauses(err);
   const message = messageFromUnknown(err);
   const normalized = message.toLowerCase();
+
+  const names = chain.map(nameFromUnknown).filter(Boolean) as string[];
+  const codes = chain.map(codeFromUnknown).filter(Boolean) as string[];
+  const statuses = chain.map(statusFromUnknown).filter((s): s is number => typeof s === 'number');
+  const status = statuses[0];
 
   // Invalid/unsupported inputs should be treated as client errors.
   if (
@@ -25,8 +65,12 @@ export function toAppError(err: unknown): AppError {
     normalized.includes('normalizer not found:') ||
     normalized.includes('formatter not found:') ||
     normalized.includes('unsupported url') ||
-    normalized.includes('invalid') ||
-    normalized.includes('missing ')
+    // Keep these patterns narrow to avoid misclassifying parser errors like "JSON-LD script not found".
+    /^missing\b/i.test(message) ||
+    /^invalid\b/i.test(message) ||
+    normalized.includes('missing query parameter') ||
+    normalized.includes("invalid '") ||
+    normalized.includes("missing '")
   ) {
     return new AppError(ErrorCode.INVALID_PARAM, message);
   }
@@ -38,8 +82,18 @@ export function toAppError(err: unknown): AppError {
     return new AppError(ErrorCode.TARGET_NOT_FOUND, message);
   }
 
+  // HTTP status hints from custom errors.
+  if (status === 404) return new AppError(ErrorCode.TARGET_NOT_FOUND, message);
+  if (status === 403 || status === 429) return new AppError(ErrorCode.TARGET_BLOCKING, message);
+
   // Timeout / abort.
-  if (normalized.includes('timeout') || normalized.includes('abort')) {
+  if (
+    names.some((n) => n === 'AbortError') ||
+    codes.some((c) => c === 'ETIMEDOUT' || c === 'ECONNRESET' || c === 'UND_ERR_CONNECT_TIMEOUT') ||
+    normalized.includes('timeout') ||
+    normalized.includes('timed out') ||
+    normalized.includes('abort')
+  ) {
     return new AppError(ErrorCode.TARGET_TIMEOUT, message);
   }
 
