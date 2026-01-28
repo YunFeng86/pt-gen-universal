@@ -5,6 +5,7 @@ import { Orchestrator } from '../lib/orchestrator';
 import { V1Controller } from './controllers/v1';
 import { V2Controller } from './controllers/v2';
 import { AppError, ErrorCode } from '../lib/errors';
+import { DEFAULT_SITE_PLUGINS } from './registry';
 
 export interface Storage {
   get(key: string): Promise<string | null>
@@ -84,7 +85,7 @@ export function createApp(storage: Storage, config: AppConfig = {}) {
   });
 
   // 初始化 Orchestrator 和 Controllers
-  const orchestrator = new Orchestrator(config);
+  const orchestrator = new Orchestrator(config, DEFAULT_SITE_PLUGINS);
   const v1 = new V1Controller(orchestrator, config);
   const v2 = new V2Controller(orchestrator, config);
 

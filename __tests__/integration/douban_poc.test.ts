@@ -1,12 +1,11 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { Orchestrator } from '../../lib/orchestrator';
-import { DoubanScraper } from '../../lib/scrapers/douban';
-import { DoubanNormalizer } from '../../lib/normalizers/douban';
 import { BBCodeFormatter } from '../../lib/formatters/bbcode';
 import * as fetchModule from '../../lib/utils/fetch';
 import fs from 'node:fs';
 import path from 'node:path';
+import { doubanPlugin } from '../../src/sites/douban';
 
 const FIXTURES_DIR = path.join(__dirname, '../fixtures');
 const DOUBAN_HTML = fs.readFileSync(path.join(FIXTURES_DIR, 'douban.html'), 'utf-8');
@@ -18,9 +17,7 @@ describe('Douban POC Integration', () => {
     beforeEach(() => {
         vi.restoreAllMocks();
         const config = {};
-        orchestrator = new Orchestrator(config);
-        orchestrator.registerScraper('douban', new DoubanScraper());
-        orchestrator.registerNormalizer('douban', new DoubanNormalizer());
+        orchestrator = new Orchestrator(config, [doubanPlugin]);
     });
 
     it('should fetch and format douban desktop movie info', async () => {

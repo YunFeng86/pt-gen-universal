@@ -1,11 +1,10 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { Orchestrator } from '../../lib/orchestrator';
-import { TmdbScraper } from '../../lib/scrapers/tmdb';
-import { TmdbNormalizer } from '../../lib/normalizers/tmdb';
 import { BBCodeFormatter } from '../../lib/formatters/bbcode';
 import * as fetchModule from '../../lib/utils/fetch';
 import { TmdbRawData } from '../../lib/types/raw-data';
+import { tmdbPlugin } from '../../src/sites/tmdb';
 
 describe('TMDB POC Integration', () => {
     let orchestrator: Orchestrator;
@@ -13,8 +12,7 @@ describe('TMDB POC Integration', () => {
     beforeEach(() => {
         vi.restoreAllMocks();
         const config = { tmdbApiKey: 'mock_key' };
-        orchestrator = new Orchestrator(config);
-        // Components registers are done in constructor
+        orchestrator = new Orchestrator(config, [tmdbPlugin]);
     });
 
     it('should fetch and format movie info', async () => {

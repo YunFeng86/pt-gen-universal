@@ -1,73 +1,57 @@
 import { AppConfig } from './types/config';
-import { Scraper } from './interfaces/scraper';
-import { Normalizer } from './interfaces/normalizer';
 import { MediaInfo, SearchResult } from './types/schema';
-import { DoubanScraper } from './scrapers/douban';
-import { ImdbScraper } from './scrapers/imdb';
-import { BangumiScraper } from './scrapers/bangumi';
-import { SteamScraper } from './scrapers/steam';
-import { GogScraper } from './scrapers/gog';
-import { IndienovaScraper } from './scrapers/indienova';
-import { TmdbScraper } from './scrapers/tmdb';
-import { DoubanNormalizer } from './normalizers/douban';
-import { ImdbNormalizer } from './normalizers/imdb';
-import { BangumiNormalizer } from './normalizers/bangumi';
-import { SteamNormalizer } from './normalizers/steam';
-import { GogNormalizer } from './normalizers/gog';
-import { IndienovaNormalizer } from './normalizers/indienova';
-import { TmdbNormalizer } from './normalizers/tmdb';
 import { AppError, ErrorCode } from './errors';
 import { toAppError } from './utils/app-error';
+import { SitePlugin } from './types/plugin';
 
 export class Orchestrator {
-    private scrapers: Map<string, Scraper> = new Map();
-    private normalizers: Map<string, Normalizer> = new Map();
+    private plugins: Map<string, SitePlugin> = new Map();
 
-    constructor(private config: AppConfig) {
-        // Register default components
-        this.registerScraper('douban', new DoubanScraper());
-        this.registerScraper('tmdb', new TmdbScraper());
-        this.registerScraper('imdb', new ImdbScraper());
-        this.registerScraper('bangumi', new BangumiScraper());
-        this.registerScraper('steam', new SteamScraper());
-        this.registerScraper('gog', new GogScraper());
-        this.registerScraper('indienova', new IndienovaScraper());
-
-        this.registerNormalizer('douban', new DoubanNormalizer());
-        this.registerNormalizer('tmdb', new TmdbNormalizer());
-        this.registerNormalizer('imdb', new ImdbNormalizer());
-        this.registerNormalizer('bangumi', new BangumiNormalizer());
-        this.registerNormalizer('steam', new SteamNormalizer());
-        this.registerNormalizer('gog', new GogNormalizer());
-        this.registerNormalizer('indienova', new IndienovaNormalizer());
+    constructor(private config: AppConfig, plugins: SitePlugin[] = []) {
+        this.registerPlugins(plugins);
     }
 
-    registerScraper(name: string, scraper: Scraper) {
-        this.scrapers.set(name, scraper);
+    registerPlugins(plugins: SitePlugin[]) {
+        for (const plugin of plugins) this.registerPlugin(plugin);
     }
 
-    registerNormalizer(name: string, normalizer: Normalizer) {
-        this.normalizers.set(name, normalizer);
+    registerPlugin(plugin: SitePlugin) {
+        this.plugins.set(plugin.site, plugin);
+    }
+
+    matchUrl(url: string): { site: string; sid: string } {
+        for (const plugin of this.plugins.values()) {
+            for (const pattern of plugin.urlPatterns) {
+                const match = url.match(pattern);
+                if (!match) continue;
+                const sid = plugin.parseSid ? plugin.parseSid(match) : match[1];
+                // If the match doesn't yield a usable sid, keep trying other patterns/plugins.
+                if (!sid) continue;
+                return { site: plugin.site, sid };
+            }
+        }
+        throw new AppError(ErrorCode.INVALID_PARAM, 'Unsupported URL');
+    }
+
+    async getMediaInfoByUrl(url: string): Promise<MediaInfo> {
+        const { site, sid } = this.matchUrl(url);
+        return this.getMediaInfo(site, sid);
     }
 
     async getMediaInfo(sourceName: string, id: string): Promise<MediaInfo> {
         try {
-            const scraper = this.scrapers.get(sourceName);
-            if (!scraper) {
+            const plugin = this.plugins.get(sourceName);
+            if (!plugin) {
+                // Keep legacy error message for compatibility.
                 throw new AppError(ErrorCode.INVALID_PARAM, `Scraper not found: ${sourceName}`);
             }
 
-            const normalizer = this.normalizers.get(sourceName);
-            if (!normalizer) {
-                throw new AppError(ErrorCode.INVALID_PARAM, `Normalizer not found: ${sourceName}`);
-            }
-
-            const rawData = await scraper.fetch(id, this.config);
+            const rawData = await plugin.scraper.fetch(id, this.config);
             if (!rawData.success) {
                 throw toAppError(new Error(rawData.error || 'Unknown error during fetch'));
             }
 
-            return normalizer.normalize(rawData, this.config);
+            return plugin.normalizer.normalize(rawData, this.config);
         } catch (e) {
             throw toAppError(e);
         }
@@ -75,11 +59,11 @@ export class Orchestrator {
 
     async search(sourceName: string, query: string): Promise<SearchResult[]> {
         try {
-            const scraper = this.scrapers.get(sourceName);
-            if (!scraper) {
+            const plugin = this.plugins.get(sourceName);
+            if (!plugin) {
                 throw new AppError(ErrorCode.INVALID_PARAM, `Scraper not found: ${sourceName}`);
             }
-            return await scraper.search(query, this.config);
+            return await plugin.scraper.search(query, this.config);
         } catch (e) {
             throw toAppError(e);
         }

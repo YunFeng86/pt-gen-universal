@@ -1,9 +1,9 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { Orchestrator } from '../../lib/orchestrator';
-import { BangumiScraper } from '../../lib/scrapers/bangumi';
 import { BBCodeFormatter } from '../../lib/formatters/bbcode';
 import * as fetchModule from '../../lib/utils/fetch';
+import { bangumiPlugin } from '../../src/sites/bangumi';
 
 describe('Bangumi POC Integration', () => {
     let orchestrator: Orchestrator;
@@ -11,7 +11,7 @@ describe('Bangumi POC Integration', () => {
     beforeEach(() => {
         vi.restoreAllMocks();
         const config = {};
-        orchestrator = new Orchestrator(config);
+        orchestrator = new Orchestrator(config, [bangumiPlugin]);
     });
 
     it('should fetch and format bangumi info', async () => {

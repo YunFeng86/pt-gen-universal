@@ -1,9 +1,9 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { Orchestrator } from '../../lib/orchestrator';
-import { GogScraper } from '../../lib/scrapers/gog';
 import { BBCodeFormatter } from '../../lib/formatters/bbcode';
 import * as fetchModule from '../../lib/utils/fetch';
+import { gogPlugin } from '../../src/sites/gog';
 
 describe('GOG POC Integration', () => {
     let orchestrator: Orchestrator;
@@ -11,7 +11,7 @@ describe('GOG POC Integration', () => {
     beforeEach(() => {
         vi.restoreAllMocks();
         const config = {};
-        orchestrator = new Orchestrator(config);
+        orchestrator = new Orchestrator(config, [gogPlugin]);
     });
 
     it('should fetch and format gog game info', async () => {

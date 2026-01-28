@@ -1,9 +1,9 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { Orchestrator } from '../../lib/orchestrator';
-import { SteamScraper } from '../../lib/scrapers/steam';
 import { BBCodeFormatter } from '../../lib/formatters/bbcode';
 import * as fetchModule from '../../lib/utils/fetch';
+import { steamPlugin } from '../../src/sites/steam';
 
 describe('Steam POC Integration', () => {
     let orchestrator: Orchestrator;
@@ -11,7 +11,7 @@ describe('Steam POC Integration', () => {
     beforeEach(() => {
         vi.restoreAllMocks();
         const config = {};
-        orchestrator = new Orchestrator(config);
+        orchestrator = new Orchestrator(config, [steamPlugin]);
     });
 
     it('should fetch and format steam game info', async () => {

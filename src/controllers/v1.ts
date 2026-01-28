@@ -5,7 +5,6 @@ import { AUTHOR, VERSION } from '../../lib/const';
 import { BBCodeFormatter } from '../../lib/formatters/bbcode';
 import { MarkdownFormatter } from '../../lib/formatters/markdown';
 import debug_get_err from '../../lib/utils/error';
-import { matchUrl } from '../../lib/utils/url';
 
 export class V1Controller {
     private bbcodeFormatter: BBCodeFormatter;
@@ -55,7 +54,7 @@ export class V1Controller {
         if (url) {
             // URL mode
             try {
-                const { site: matchedSite, sid: matchedSid } = matchUrl(url);
+                const { site: matchedSite, sid: matchedSid } = this.orchestrator.matchUrl(url);
                 return this.processInfo(c, matchedSite, matchedSid);
             } catch (e: any) {
                 // V1 returns 400 for unsupported URL

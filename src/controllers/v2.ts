@@ -6,7 +6,6 @@ import { API_VERSION, SCHEMA_VERSION, PARSER_VERSION, SOURCE_FINGERPRINTS } from
 import { ApiV2SuccessResponse } from '../../lib/types/api_v2';
 import { BBCodeFormatter } from '../../lib/formatters/bbcode';
 import { MarkdownFormatter } from '../../lib/formatters/markdown';
-import { matchUrl } from '../../lib/utils/url';
 import { toAppError } from '../../lib/utils/app-error';
 
 export class V2Controller {
@@ -173,6 +172,6 @@ export class V2Controller {
     }
 
     private parseUrl(url: string): { site: string, sid: string } {
-        return matchUrl(url);
+        return this.orchestrator.matchUrl(url);
     }
 }

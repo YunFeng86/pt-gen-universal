@@ -1,9 +1,9 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { Orchestrator } from '../../lib/orchestrator';
-import { IndienovaScraper } from '../../lib/scrapers/indienova';
 import { BBCodeFormatter } from '../../lib/formatters/bbcode';
 import * as fetchModule from '../../lib/utils/fetch';
+import { indienovaPlugin } from '../../src/sites/indienova';
 
 describe('Indienova POC Integration', () => {
     let orchestrator: Orchestrator;
@@ -11,7 +11,7 @@ describe('Indienova POC Integration', () => {
     beforeEach(() => {
         vi.restoreAllMocks();
         const config = {};
-        orchestrator = new Orchestrator(config);
+        orchestrator = new Orchestrator(config, [indienovaPlugin]);
     });
 
     it('should fetch and format indienova game info', async () => {
