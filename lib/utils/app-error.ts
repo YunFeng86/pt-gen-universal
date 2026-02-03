@@ -68,6 +68,7 @@ export function toAppError(err: unknown): AppError {
   const statuses = chain.map(statusFromUnknown).filter((s): s is number => typeof s === 'number');
   const status = statuses[0];
   const proxy_used = chain.map(proxyUsedFromUnknown).find((v) => typeof v === 'boolean');
+  // Only return non-sensitive context. The HTTP layer may echo `details` to clients.
   const details = typeof proxy_used === 'boolean' ? { proxy_used } : undefined;
 
   // Invalid/unsupported inputs should be treated as client errors.

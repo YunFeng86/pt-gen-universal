@@ -55,7 +55,7 @@ describe('SteamNormalizer', () => {
         expect(result.playdate).toContain('2024 年 8 月 20 日');
         expect(result.genre).toEqual(['Action', 'Role-Playing']);
 
-        expect(result.extra.sysreq).toBeDefined();
+        expect((result.extra as any).sysreq).toBeDefined();
         // expect(result.extra.sysreq[0]).toContain('Windows');
     });
 });

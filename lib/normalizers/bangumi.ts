@@ -112,6 +112,7 @@ export class BangumiNormalizer implements Normalizer {
         return {
             site: 'bangumi',
             id: data.sid,
+            link: bangumiLink,
             title: mainTitle,
             original_title: mainTitle, // Bangumi title logic is fuzzy
             chinese_title: infoMap["中文名"] || '',
@@ -141,7 +142,22 @@ export class BangumiNormalizer implements Normalizer {
 
             bangumi_rating_average: rating,
             bangumi_votes: votes,
+            ratings: rating && votes ? {
+                bangumi: {
+                    average: rating,
+                    votes: votes,
+                    formatted: `${rating}/10 from ${votes} users`,
+                    link: bangumiLink
+                }
+            } : undefined,
 
+            extras: {
+                info_map: infoMap,
+                staff: staff,
+                aliases: uniqueAliases,
+                rating: rating,
+                votes: votes
+            },
             extra: {
                 info_map: infoMap,
                 staff: staff,

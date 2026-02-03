@@ -1,5 +1,5 @@
 import { Formatter } from '../interfaces/formatter';
-import { MediaInfo } from '../types/schema';
+import { MediaExtras, MediaInfo } from '../types/schema';
 import { normalizeMaybeArray, normalizePeople } from '../utils/string';
 import { ensureArray } from '../utils/array';
 import { GAME_INSTALL_TEMPLATE } from '../utils/legacy-utils';
@@ -15,8 +15,8 @@ export class BBCodeFormatter implements Formatter {
 
     private formatMovie(data: MediaInfo): string {
         // Source-specific override (legacy compat, though we tried to remove it)
-        if (data.extra?.descr_bbcode) {
-            return String(data.extra.descr_bbcode).trim();
+        if (data.extras?.descr_bbcode) {
+            return String(data.extras.descr_bbcode).trim();
         }
 
         const poster = String(data?.poster || '');
@@ -33,32 +33,41 @@ export class BBCodeFormatter implements Formatter {
         const playdate = ensureArray(data?.playdate).filter(Boolean);
 
         // Ratings & Links
-        const imdb_rating = data.imdb_rating
-            ? String(data.imdb_rating)
-            : data.imdb_rating_average
-                ? `${data.imdb_rating_average}/10 from ${data.imdb_votes || 0} users`
-                : '';
-        const imdb_link = String(data?.imdb_link || '');
+        const imdb_rating =
+            data.ratings?.imdb?.formatted ||
+            String(data.imdb_rating || '') ||
+            (data.imdb_rating_average && data.imdb_votes
+                ? `${data.imdb_rating_average}/10 from ${data.imdb_votes} users`
+                : '');
+        const imdb_link = data.ratings?.imdb?.link || String(data.imdb_link || '');
 
-        const douban_rating = data.douban_rating
-            ? String(data.douban_rating)
-            : data.douban_rating_average
-                ? `${data.douban_rating_average}/10 from ${data.douban_votes || 0} users`
-                : '';
-        const douban_link = String(data?.douban_link || '');
+        const douban_rating =
+            data.ratings?.douban?.formatted ||
+            String(data.douban_rating || '') ||
+            (data.douban_rating_average && data.douban_votes
+                ? `${data.douban_rating_average}/10 from ${data.douban_votes} users`
+                : '');
+        const douban_link = data.ratings?.douban?.link || String(data.douban_link || '');
 
-        const tmdb_rating = data.tmdb_rating
-            ? String(data.tmdb_rating)
-            : data.tmdb_rating_average
-                ? `${data.tmdb_rating_average}/10 from ${data.tmdb_votes || 0} users`
-                : '';
-        const tmdb_link = String(data?.tmdb_link || '');
+        const tmdb_rating =
+            data.ratings?.tmdb?.formatted ||
+            String(data.tmdb_rating || '') ||
+            (data.tmdb_rating_average && data.tmdb_votes
+                ? `${data.tmdb_rating_average}/10 from ${data.tmdb_votes} users`
+                : '');
+        const tmdb_link = data.ratings?.tmdb?.link || String(data.tmdb_link || '');
 
         // Bangumi specific
-        const bangumi_rating = data.extra?.rating
-            ? `${data.extra.rating}/10 from ${data.extra.votes || 0} users`
-            : '';
-        const bangumi_link = data.site === 'bangumi' ? `https://bgm.tv/subject/${data.id}` : '';
+        const bangumi_rating =
+            data.ratings?.bangumi?.formatted ||
+            (data.bangumi_rating_average && data.bangumi_votes
+                ? `${data.bangumi_rating_average}/10 from ${data.bangumi_votes} users`
+                : '');
+        const bangumi_link =
+            data.ratings?.bangumi?.link ||
+            (data.site === 'bangumi'
+                ? String(data.link || `https://bgm.tv/subject/${data.id}`)
+                : '');
 
         const episodes = String(data?.episodes || '');
         const seasons = String(data?.seasons || '');
@@ -101,9 +110,9 @@ export class BBCodeFormatter implements Formatter {
             ? `◎主　　演　${cast.slice(0, 15).join('\n' + '　'.repeat(4) + '  　').trim()}\n`
             : '';
 
-        if (data.extra?.staff && data.extra?.staff.length > 0) {
+        if (data.extras?.staff && data.extras?.staff.length > 0) {
             // Bangumi often has a dedicated staff list
-            const otherStaff = data.extra.staff.filter((s: string) =>
+            const otherStaff = data.extras.staff.filter((s: string) =>
                 !s.includes("监督") && !s.includes("导演") &&
                 !s.includes("脚本") && !s.includes("系列构成")
             ).slice(0, 15);
@@ -137,9 +146,9 @@ export class BBCodeFormatter implements Formatter {
 
     private formatGame(data: MediaInfo): string {
         const poster = String(data?.poster || '');
-        const title = data.title;
+        const title = data.chinese_title || data.foreign_title;
         const gameInfo = data.game_info || {};
-        const extra = data.extra || {};
+        const extra = (data.extras || data.extra || {}) as MediaExtras;
 
         let descr = poster ? `[img]${poster}[/img]\n\n` : '';
 
@@ -152,8 +161,8 @@ export class BBCodeFormatter implements Formatter {
 
         descr += "【基本信息】\n\n";
         if (title) descr += `名称: ${title}\n`;
-        if (data.original_title && data.original_title !== title) {
-            descr += `英文名称: ${data.original_title}\n`;
+        if (data.foreign_title && data.foreign_title !== title) {
+            descr += `英文名称: ${data.foreign_title}\n`;
         }
 
         // Steam specific raw lines (preserved for fidelity)
@@ -201,7 +210,7 @@ export class BBCodeFormatter implements Formatter {
 
         // System Requirements
         if (extra.sysreq || extra.system_requirements) {
-            const sys = extra.sysreq || extra.system_requirements;
+            const sys = extra.sysreq ?? extra.system_requirements;
             descr += "【配置需求】\n\n";
 
             // Steam style (already array of strings per OS)
@@ -225,8 +234,8 @@ export class BBCodeFormatter implements Formatter {
                 }
             }
             // GOG style (structured object)
-            else if (typeof sys === 'object') {
-                for (let [osName, osData] of Object.entries(sys) as any) {
+            else if (sys && typeof sys === 'object') {
+                for (let [osName, osData] of Object.entries(sys as Record<string, any>)) {
                     let osDisplayName = osName === "windows" ? "Windows" :
                         osName === "osx" ? "Mac OS X" :
                             osName === "linux" ? "Linux" : osName;
@@ -261,8 +270,10 @@ export class BBCodeFormatter implements Formatter {
         }
 
         // Screenshots
-        const screenshots = data.screenshots || extra.screenshots || (data.extra?.info_map && data.extra.info_map['screenshots']); // Indienova legacy path?
-        if (screenshots && screenshots.length > 0) {
+        const infoMap = extra.info_map as Record<string, unknown> | undefined;
+        const infoMapScreenshots = infoMap && Array.isArray((infoMap as any).screenshots) ? (infoMap as any).screenshots : undefined;
+        const screenshots = data.screenshots || extra.screenshots || infoMapScreenshots; // Indienova legacy path?
+        if (Array.isArray(screenshots) && screenshots.length > 0) {
             descr += "【游戏截图】\n\n";
             descr += screenshots.map((x: string) => `[img]${x}[/img]`).join("\n") + "\n\n";
         }

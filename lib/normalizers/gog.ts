@@ -102,9 +102,19 @@ export class GogNormalizer implements Normalizer {
             descr = descrBbcode.split("\n").map(x => x.trim()).filter(x => x.length > 0).join("\n").trim();
         }
 
+        const extras = {
+            platforms: platforms,
+            sysreq: systemRequirements,
+            system_requirements: systemRequirements,
+            price: price
+        };
+
         return {
             site: 'gog',
             id: data.sid,
+            link: `https://www.gog.com${data.url || ''}`,
+
+            // Legacy compat
             title: title || '',
             original_title: title || '',
             chinese_title: '',
@@ -145,12 +155,8 @@ export class GogNormalizer implements Normalizer {
                 spec: systemRequirements
             },
 
-            extra: {
-                platforms: platforms,
-                sysreq: systemRequirements,
-                system_requirements: systemRequirements,
-                price: price
-            }
+            extras,
+            extra: extras
         };
     }
 }

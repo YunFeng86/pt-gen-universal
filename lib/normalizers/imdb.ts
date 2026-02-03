@@ -53,16 +53,25 @@ export class ImdbNormalizer implements Normalizer {
         const description = jsonLd.description || '';
         const duration = jsonLd.duration || '';
 
+        const extras = {
+            details: data.details,
+            reviews: reviews,
+            metascore: metascore
+        };
+
         const info: MediaInfo = {
             site: 'imdb',
             id: data.imdb_id,
+            link: imdbLink,
 
+            // Legacy compat
             title: name,
             original_title: name,
+
             chinese_title: '',
             foreign_title: name,
             aka: (data.aka || []).map(a => a.title),
-            trans_title: [], // Populated from AKAs? 
+            trans_title: [],
             this_title: [name],
 
             year: datePublished ? datePublished.substring(0, 4) : '',
@@ -88,12 +97,18 @@ export class ImdbNormalizer implements Normalizer {
             imdb_link: imdbLink,
             imdb_rating_average: rating || 0,
             imdb_votes: votes || 0,
+            imdb_rating: rating && votes ? `${rating}/10 from ${votes} users` : '',
+            ratings: rating && votes ? {
+                imdb: {
+                    average: rating,
+                    votes: votes,
+                    formatted: `${rating}/10 from ${votes} users`,
+                    link: imdbLink
+                }
+            } : undefined,
 
-            extra: {
-                details: data.details,
-                reviews: reviews,
-                metascore: metascore
-            }
+            extras,
+            extra: extras
         };
 
         return info;

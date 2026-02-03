@@ -8,6 +8,7 @@ import { BBCodeFormatter } from '../../lib/formatters/bbcode';
 import { MarkdownFormatter } from '../../lib/formatters/markdown';
 import { toAppError } from '../../lib/utils/app-error';
 import { CTX_CACHEABLE } from '../utils/context';
+import { extractRequestParams } from '../utils/request-params';
 
 export class V2Controller {
     private bbcodeFormatter: BBCodeFormatter;
@@ -19,106 +20,51 @@ export class V2Controller {
     }
 
     async handleInfo(c: Context) {
-        // Default to JSON for API v2. (Older code defaulted to bbcode; that conflicted with README.)
-        let format = 'json';
-
-        // Query params are always available (GET and POST).
-        const queryUrl = c.req.query('url');
-        const querySite = c.req.query('site');
-        const querySid = c.req.query('sid');
-        const queryFormat = c.req.query('format');
-        if (queryFormat) format = queryFormat;
-
-        // RESTful path params (if route matches /api/v2/info/:site/:sid)
-        const pathSite = c.req.param('site');
-        const pathSid = c.req.param('sid');
-
-        // POST body (highest priority for url/site/sid; format can override query)
-        let bodyUrl: string | undefined;
-        let bodySite: string | undefined;
-        let bodySid: string | undefined;
-        if (c.req.method === 'POST') {
-            // Hono/Request will throw on empty body if we call c.req.json() unconditionally.
-            // Allow POST with only query params; only treat it as "invalid JSON" when a non-empty
-            // body looks like JSON but can't be parsed.
-            const contentType = (c.req.header('content-type') || '').toLowerCase();
-            let rawBody = '';
-            try {
-                rawBody = await c.req.text();
-            } catch {
-                rawBody = '';
-            }
-
-            const trimmed = rawBody.trim();
-            if (trimmed) {
-                const declaredJson =
-                    contentType.includes('application/json') || contentType.includes('+json');
-                const looksLikeJson = /^[\s]*[{\[]/.test(trimmed);
-                const shouldTryParseJson = declaredJson || looksLikeJson;
-
-                // If it's not declared as JSON and doesn't look like JSON, ignore the body and
-                // fall back to query/path params. This prevents misclassifying form/text bodies.
-                if (shouldTryParseJson) {
-                    try {
-                        const body = JSON.parse(rawBody);
-                        if (typeof body?.url === 'string') bodyUrl = body.url;
-                        if (typeof body?.site === 'string') bodySite = body.site;
-                        if (typeof body?.sid === 'string') bodySid = body.sid;
-                        if (typeof body?.format === 'string') format = body.format;
-                    } catch {
-                        throw new AppError(ErrorCode.INVALID_PARAM, 'Invalid JSON body');
-                    }
-                }
-            }
-        }
-
-        const normalizedFormat = String(format).trim().toLowerCase();
-        const allowedFormats = new Set(['json', 'bbcode', 'markdown']);
-        if (!allowedFormats.has(normalizedFormat)) {
-            throw new AppError(ErrorCode.INVALID_PARAM, "Invalid 'format' parameter");
-        }
-
-        // Resolve effective input. Precedence: body > path > query for site/sid; body > query for url.
-        let url: string | undefined = bodyUrl ?? queryUrl;
-        let site: string | undefined = bodySite ?? pathSite ?? querySite;
-        let sid: string | undefined = bodySid ?? pathSid ?? querySid;
-
-        // Validation
-        if (!url && (!site || !sid)) {
-            throw new AppError(ErrorCode.INVALID_PARAM, "Missing 'url' or 'site/sid' parameters");
-        }
-
         try {
-            // Resolve Site/SID if URL is provided
-            if (url) {
-                const parsed = this.parseUrl(url);
-                site = parsed.site;
-                sid = parsed.sid;
+            // 提取参数（统一处理 query/path/body，支持优先级）
+            const { url, site, sid, format } = await extractRequestParams(c);
+
+            // 验证格式参数
+            const normalizedFormat = format.trim().toLowerCase();
+            const allowedFormats = new Set(['json', 'bbcode', 'markdown']);
+            if (!allowedFormats.has(normalizedFormat)) {
+                throw new AppError(ErrorCode.INVALID_PARAM, "Invalid 'format' parameter");
             }
 
-            // At this point, site and sid MUST be defined
-            if (!site || !sid) {
+            // 验证必需参数
+            if (!url && (!site || !sid)) {
+                throw new AppError(ErrorCode.INVALID_PARAM, "Missing 'url' or 'site/sid' parameters");
+            }
+
+            // 解析 URL 或直接使用 site/sid
+            let finalSite = site;
+            let finalSid = sid;
+            if (url) {
+                const parsed = this.orchestrator.matchUrl(url);
+                finalSite = parsed.site;
+                finalSid = parsed.sid;
+            }
+
+            if (!finalSite || !finalSid) {
                 throw new AppError(ErrorCode.INVALID_PARAM, "Could not resolve site/sid");
             }
 
-            const info = await this.orchestrator.getMediaInfo(site, sid);
+            // 获取媒体信息
+            const info = await this.orchestrator.getMediaInfo(finalSite, finalSid);
 
-            // Generate format output if requested
+            // 生成格式化输出
             let formatOutput: string | undefined;
-
-            if (normalizedFormat === 'bbcode' || normalizedFormat === 'markdown') {
-                if (normalizedFormat === 'bbcode') {
-                    formatOutput = this.bbcodeFormatter.format(info);
-                } else {
-                    formatOutput = this.markdownFormatter.format(info);
-                }
+            if (normalizedFormat === 'bbcode') {
+                formatOutput = this.bbcodeFormatter.format(info);
+            } else if (normalizedFormat === 'markdown') {
+                formatOutput = this.markdownFormatter.format(info);
             }
 
             const response: ApiV2SuccessResponse = {
                 versions: {
                     schema: SCHEMA_VERSION,
                     parser: PARSER_VERSION,
-                    source_fingerprint: SOURCE_FINGERPRINTS[site] || 'unknown'
+                    source_fingerprint: SOURCE_FINGERPRINTS[finalSite] || 'unknown'
                 },
                 meta: {
                     api_version: API_VERSION,
@@ -127,11 +73,11 @@ export class V2Controller {
                 },
                 data: {
                     ...info,
-                    format: formatOutput // Will be undefined if format=json
+                    format: formatOutput
                 }
             };
 
-            c.set(CTX_CACHEABLE, true)
+            c.set(CTX_CACHEABLE, true);
             return c.json(response);
         } catch (e: any) {
             throw toAppError(e);

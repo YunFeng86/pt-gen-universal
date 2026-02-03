@@ -45,7 +45,7 @@ describe('IndienovaNormalizer', () => {
         expect(result.title).toBe('黑神话：悟空');
         expect(result.original_title).toBe('Black Myth: Wukong');
         expect(result.director).toEqual(['Game Science']);
-        expect(result.extra.price).toHaveLength(1);
-        expect(result.extra.price[0]).toContain('Steam：$60');
+        expect((result.extra as any).price).toHaveLength(1);
+        expect((result.extra as any).price[0]).toContain('Steam：$60');
     });
 });

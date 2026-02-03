@@ -8,6 +8,7 @@ import { AppError, ErrorCode } from '../lib/errors';
 import { DEFAULT_SITE_PLUGINS } from './registry';
 import { CTX_CACHEABLE } from './utils/context'
 import { CacheManager } from './cache/cache-manager'
+import { createRateLimitMiddleware } from './middleware/rate-limit'
 import type { Storage } from './storage/storage'
 
 export type { Storage } from './storage/storage'
@@ -133,7 +134,14 @@ export function createCacheMiddleware(storage: Storage, cacheTTL: number) {
     try {
       const clonedRes = c.res.clone()
       const data = await clonedRes.json()
-      await cache.set(cacheKey, data, c)
+      const write = cache.set(cacheKey, data)
+      // Use waitUntil for Cloudflare Workers, fire-and-forget for Node/Bun
+      const execCtx = (c as any).executionCtx
+      if (execCtx?.waitUntil) {
+        execCtx.waitUntil(write)
+      } else {
+        write.catch(() => {}) // Prevent unhandled rejection
+      }
     } catch {
       // Never let cache serialization/write failures break the response.
     }
@@ -192,8 +200,9 @@ function setupRoutes(app: Hono, v1: V1Controller, v2: V2Controller, htmlPage: st
   app.get('/api/v2/info', (c) => v2.handleInfo(c))
   app.post('/api/v2/info', (c) => v2.handleInfo(c))
   app.get('/api/v2/info/:site/:sid', (c) => v2.handleInfo(c))
-  // I should probably support RESTful path in V2 as well if desired, but spec was just query.
-  // I'll stick to query param as primary V2 for now based on plan.
+  // Allow POST with RESTful path too, so body/query can still provide `format` while path provides site/sid.
+  app.post('/api/v2/info/:site/:sid', (c) => v2.handleInfo(c))
+  // Query is still the primary V2 interface; path params exist for convenience/compat.
 
   // ==================== Aliases (Legacy) ====================
 
@@ -239,6 +248,13 @@ export function createApp(storage: Storage, config: AppConfig = {}) {
 
   // 全局 CORS 中间件
   app.use('*', cors())
+
+  // Rate Limiting（如果配置了限制）
+  const rateLimit = config.rateLimitPerMinute ?? 0
+  if (rateLimit > 0) {
+    app.use('/api/*', createRateLimitMiddleware(storage, rateLimit))
+  }
+
   app.use('/api/*', createAuthMiddleware(config))
   app.use('/api/*', createCacheMiddleware(storage, cacheTTL))
   setupRoutes(app, v1, v2, htmlPage)

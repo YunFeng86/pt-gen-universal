@@ -29,6 +29,7 @@ export interface AppConfig {
     enableDebug?: boolean;
     htmlPage?: string;
     cacheTTL?: number;
+    rateLimitPerMinute?: number;
 
     // 通用配置
     timeout?: number;

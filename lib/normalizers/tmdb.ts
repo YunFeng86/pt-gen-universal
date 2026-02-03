@@ -11,6 +11,7 @@ export class TmdbNormalizer implements Normalizer {
 
         const title = data.title || data.name || '';
         const originalTitle = data.original_title || data.original_name || '';
+        const tmdbLink = `https://www.themoviedb.org/${mediaType}/${data.tmdb_id}`;
         const year = data.release_date
             ? data.release_date.substring(0, 4)
             : (data.first_air_date ? data.first_air_date.substring(0, 4) : '');
@@ -18,17 +19,30 @@ export class TmdbNormalizer implements Normalizer {
         const info: MediaInfo = {
             site: 'tmdb',
             id: data.tmdb_id,
+            link: tmdbLink,
+
+            // Legacy compat
             title: title,
-            year: year,
-            intro: data.overview || '暂无相关剧情介绍',
-            introduction: data.overview || '暂无相关剧情介绍', // Alias
+            original_title: originalTitle || title,
+            introduction: data.overview || '暂无相关剧情介绍',
             poster: data.poster_path ? `https://image.tmdb.org/t/p/original${data.poster_path}` : '',
 
             // TMDB specific
             tmdb_id: data.tmdb_id,
-            tmdb_link: `https://www.themoviedb.org/${mediaType}/${data.tmdb_id}`,
+            tmdb_link: tmdbLink,
             tmdb_rating_average: data.vote_average || 0,
             tmdb_votes: data.vote_count || 0,
+            tmdb_rating: data.vote_average && data.vote_count
+                ? `${data.vote_average}/10 from ${data.vote_count} users`
+                : '',
+            ratings: (data.vote_average && data.vote_count) ? {
+                tmdb: {
+                    average: data.vote_average,
+                    votes: data.vote_count,
+                    formatted: `${data.vote_average}/10 from ${data.vote_count} users`,
+                    link: tmdbLink
+                }
+            } : undefined,
 
             genre: (data.genres || []).map(g => g.name),
             region: (data.production_countries || []).map(c => c.name),
@@ -46,18 +60,13 @@ export class TmdbNormalizer implements Normalizer {
             episodes: '',
             seasons: '',
             duration: '',
-
             awards: '',
-
-            // Legacy/Optional fields
-            imdb_id: '',
-            imdb_link: '',
-            douban_id: '',
 
             // Required MediaInfo fields
             chinese_title: '',
             foreign_title: originalTitle,
             aka: [],
+            year: year,
         };
 
         // AKA/Titles

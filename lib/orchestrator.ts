@@ -6,7 +6,7 @@ import { SitePlugin } from './types/plugin';
 
 export class Orchestrator {
     private plugins: Map<string, SitePlugin> = new Map();
-    private pluginOrder: string[] = [];
+    private sortedPlugins: SitePlugin[] = [];
 
     constructor(private config: AppConfig, plugins: SitePlugin[] = []) {
         this.registerPlugins(plugins);
@@ -18,39 +18,24 @@ export class Orchestrator {
 
     registerPlugin(plugin: SitePlugin) {
         this.plugins.set(plugin.site, plugin);
-        // Preserve registry order for stable matching when priorities tie.
-        if (!this.pluginOrder.includes(plugin.site)) this.pluginOrder.push(plugin.site);
+        this.rebuildSortedPlugins();
     }
 
-    private pluginsForMatching(): SitePlugin[] {
-        const withOrder = this.pluginOrder
-            .map((site, idx) => ({
-                idx,
-                plugin: this.plugins.get(site),
-            }))
-            .filter((x): x is { idx: number; plugin: SitePlugin } => Boolean(x.plugin));
-
-        // Higher priority first; ties keep registry order.
-        withOrder.sort((a, b) => {
-            const ap = a.plugin.priority ?? 0;
-            const bp = b.plugin.priority ?? 0;
-            if (ap !== bp) return bp - ap;
-            return a.idx - b.idx;
+    private rebuildSortedPlugins() {
+        this.sortedPlugins = Array.from(this.plugins.values()).sort((a, b) => {
+            const ap = a.priority ?? 0;
+            const bp = b.priority ?? 0;
+            return ap !== bp ? bp - ap : 0;
         });
-
-        return withOrder.map((x) => x.plugin);
     }
 
     matchUrl(url: string): { site: string; sid: string } {
-        for (const plugin of this.pluginsForMatching()) {
+        for (const plugin of this.sortedPlugins) {
             for (const pattern of plugin.urlPatterns) {
-                // Use exec() so capture groups work even if someone accidentally adds /g.
-                // Reset lastIndex to avoid stateful regex surprises.
                 pattern.lastIndex = 0;
                 const match = pattern.exec(url);
                 if (!match) continue;
                 const sid = plugin.parseSid ? plugin.parseSid(match) : match[1];
-                // If the match doesn't yield a usable sid, keep trying other patterns/plugins.
                 if (!sid) continue;
                 return { site: plugin.site, sid };
             }

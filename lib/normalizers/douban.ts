@@ -37,9 +37,23 @@ export class DoubanNormalizer implements Normalizer {
 
         if (data.imdb_data) {
             const imdb = data.imdb_data?.resource;
-            if (imdb) {
-                info.imdb_rating_average = imdb.rating || 0;
-                info.imdb_votes = imdb.ratingCount || 0;
+            if (imdb && imdb.rating && imdb.ratingCount) {
+                const imdbId = info.imdb_id;
+                if (!info.imdb_link && imdbId) {
+                    info.imdb_link = `https://www.imdb.com/title/${imdbId}/`;
+                }
+
+                info.imdb_rating_average = imdb.rating;
+                info.imdb_votes = imdb.ratingCount;
+                info.imdb_rating = `${imdb.rating}/10 from ${imdb.ratingCount} users`;
+
+                info.ratings = info.ratings || {};
+                info.ratings.imdb = {
+                    average: imdb.rating,
+                    votes: imdb.ratingCount,
+                    formatted: `${imdb.rating}/10 from ${imdb.ratingCount} users`,
+                    link: info.imdb_link || ''
+                };
             }
         }
 
@@ -65,6 +79,7 @@ export class DoubanNormalizer implements Normalizer {
         const info: MediaInfo = {
             site: 'douban',
             id: sid,
+            link: link,
             chinese_title: '',
             foreign_title: '',
             aka: [],
@@ -158,14 +173,20 @@ export class DoubanNormalizer implements Normalizer {
             .filter((a) => a.length > 0)
             .join('\n');
 
-        info.douban_rating_average = ldJson['aggregateRating']
-            ? ldJson['aggregateRating']['ratingValue']
-            : 0;
-        info.douban_votes = ldJson['aggregateRating']
-            ? ldJson['aggregateRating']['ratingCount']
-            : 0;
-        if (info.douban_rating_average) {
-            info.douban_rating = `${info.douban_rating_average}/10 from ${info.douban_votes || 0} users`;
+        const doubanRating = ldJson['aggregateRating']?.['ratingValue'] || 0;
+        const doubanVotes = ldJson['aggregateRating']?.['ratingCount'] || 0;
+        info.douban_rating_average = Number(doubanRating) || 0;
+        info.douban_votes = Number(doubanVotes) || 0;
+        if (info.douban_rating_average && info.douban_votes) {
+            info.douban_rating = `${info.douban_rating_average}/10 from ${info.douban_votes} users`;
+            info.ratings = {
+                douban: {
+                    average: info.douban_rating_average,
+                    votes: info.douban_votes,
+                    formatted: info.douban_rating,
+                    link: link
+                }
+            };
         }
 
         if (ldJson['image']) {
@@ -190,6 +211,7 @@ export class DoubanNormalizer implements Normalizer {
         const info: MediaInfo = {
             site: 'douban',
             id: sid,
+            link: link,
             chinese_title: '',
             foreign_title: '',
             aka: [],
@@ -232,13 +254,21 @@ export class DoubanNormalizer implements Normalizer {
                 .replace('img3', 'img1');
         }
 
-        const ratingValue = $('meta[itemprop="ratingValue"]').attr('content') || '';
-        const reviewCount = $('meta[itemprop="reviewCount"]').attr('content') || '';
+        const ratingValue = Number($('meta[itemprop="ratingValue"]').attr('content')) || 0;
+        const reviewCount = Number($('meta[itemprop="reviewCount"]').attr('content')) || 0;
 
-        info.douban_rating_average = Number(ratingValue) || 0;
-        info.douban_votes = Number(reviewCount) || 0;
-        if (info.douban_rating_average) {
-            info.douban_rating = `${info.douban_rating_average}/10 from ${info.douban_votes || 0} users`;
+        info.douban_rating_average = ratingValue || 0;
+        info.douban_votes = reviewCount || 0;
+        if (info.douban_rating_average && info.douban_votes) {
+            info.douban_rating = `${info.douban_rating_average}/10 from ${info.douban_votes} users`;
+            info.ratings = {
+                douban: {
+                    average: info.douban_rating_average,
+                    votes: info.douban_votes,
+                    formatted: info.douban_rating,
+                    link: link
+                }
+            };
         }
 
         const meta = $('.sub-meta').first().text().replace(/\s+/g, ' ').trim();

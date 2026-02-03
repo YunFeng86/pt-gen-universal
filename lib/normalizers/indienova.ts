@@ -92,18 +92,32 @@ export class IndienovaNormalizer implements Normalizer {
         const rateStars = rate.split('/')[0]?.trim() || ''; // Extracting from existing rate
         const rateCount = rate.split('/')[1]?.trim() || ''; // Extracting from existing rate
 
+        const extras = {
+            info_map: infoMap,
+            rate_stars: rateStars,
+            rate_count: rateCount,
+            intro, // Keeping original intro
+            intro_detail: introDetail, // Keeping original intro_detail
+            links: links, // Keeping original links
+            level: level, // Keeping original level
+            price: price, // Keeping original price
+        };
+
         return {
             site: 'indienova',
             id: data.sid,
-            title: title,
-            original_title: englishTitle || chineseTitle, // Keeping original logic for these
+            link: indienovaLink,
+
+            // Legacy compat
+            title: chineseTitle,
+            original_title: englishTitle || chineseTitle,
             chinese_title: chineseTitle,
             foreign_title: englishTitle,
             aka: anotherTitle ? [anotherTitle] : [],
             trans_title: [anotherTitle].filter(Boolean),
             this_title: [chineseTitle, englishTitle].filter(Boolean),
 
-            year: releaseDate.match(/\d{4}/)?.[0] || '', // Using existing releaseDate parsing
+            year: releaseDate.match(/\d{4}/)?.[0] || '',
             playdate: [releaseDate],
             region: [],
             genre: tags,
@@ -132,16 +146,8 @@ export class IndienovaNormalizer implements Normalizer {
                 }
             },
 
-            extra: {
-                info_map: infoMap,
-                rate_stars: rateStars,
-                rate_count: rateCount,
-                intro, // Keeping original intro
-                intro_detail: introDetail, // Keeping original intro_detail
-                links: links, // Keeping original links
-                level: level, // Keeping original level
-                price: price, // Keeping original price
-            }
+            extras,
+            extra: extras
         };
     }
 }

@@ -204,12 +204,27 @@ export class SteamNormalizer implements Normalizer {
         }
 
 
-        // Start creating MediaInfo
+        const extras = {
+            steam_id: data.sid,
+            languages_raw: languagesRaw,
+            sysreq: sysreq,
+            windows_min: windowsMin,
+            windows_rec: windowsRec,
+            type_line: typeLine,
+            dev_line: devLine,
+            pub_line: pubLine,
+            release_line: releaseLine
+        };
+
         const info: MediaInfo = {
             site: 'steam',
             id: data.sid,
+            link: `https://store.steampowered.com/app/${data.sid}`,
+
+            // Legacy compat
             title: displayName || name,
             original_title: name,
+
             chinese_title: chineseName,
             foreign_title: name,
             aka: [],
@@ -248,17 +263,8 @@ export class SteamNormalizer implements Normalizer {
                 audio_lang: fullAudioLangs
             },
 
-            extra: {
-                steam_id: data.sid,
-                languages_raw: languagesRaw,
-                sysreq: sysreq,
-                windows_min: windowsMin,
-                windows_rec: windowsRec,
-                type_line: typeLine,
-                dev_line: devLine,
-                pub_line: pubLine,
-                release_line: releaseLine
-            }
+            extras,
+            extra: extras
         };
 
         return info;

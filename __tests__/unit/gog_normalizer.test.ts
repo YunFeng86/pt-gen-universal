@@ -53,8 +53,8 @@ describe('GogNormalizer', () => {
         expect(result.site).toBe('gog');
         expect(result.title).toBe('The Witcher 3: Wild Hunt');
         expect(result.poster).toBe('https://example.com/cover.jpg');
-        expect(result.extra.platforms).toContain('Windows');
-        expect(result.extra.system_requirements.windows).toBeDefined();
+        expect((result.extra as any).platforms).toContain('Windows');
+        expect((result.extra as any).system_requirements.windows).toBeDefined();
         // expect(result.extra.system_requirements.windows.requirements.minimum.os).toBe('Win 10');
         expect(result.introduction).toBe('This is a game.');
     });

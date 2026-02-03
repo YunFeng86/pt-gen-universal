@@ -66,14 +66,8 @@ export class CacheManager {
     }
   }
 
-  set(key: string, data: unknown, c: Context): Promise<void> | void {
-    const write = this.storage.put(key, JSON.stringify(data), this.cacheTTL)
-    const execCtx = (c as any).executionCtx
-    if (execCtx && typeof execCtx.waitUntil === 'function') {
-      execCtx.waitUntil(write)
-      return
-    }
-    return write
+  async set(key: string, data: unknown): Promise<void> {
+    await this.storage.put(key, JSON.stringify(data), this.cacheTTL)
   }
 }
 
