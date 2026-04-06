@@ -25,15 +25,13 @@
 
 ## 一键部署
 
-### 立即可用
-
 [![Deploy to Cloudflare Workers](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/YunFeng86/pt-gen-universal)
 
 [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2FYunFeng86%2Fpt-gen-universal&env=APIKEY,TMDB_API_KEY,UPSTASH_REDIS_REST_URL,UPSTASH_REDIS_REST_TOKEN,DOUBAN_COOKIE,INDIENOVA_COOKIE&envDescription=PT-Gen%20%E8%BF%90%E8%A1%8C%E6%89%80%E9%9C%80%E7%9A%84%20API%20%E5%AF%86%E9%92%A5%E3%80%81Redis%20REST%20%E5%8F%8A%20Cookie&envLink=https%3A%2F%2Fgithub.com%2FYunFeng86%2Fpt-gen-universal%23%E9%85%8D%E7%BD%AE)
 
 [![Deploy to Netlify](https://www.netlify.com/img/deploy/button.svg)](https://app.netlify.com/start/deploy?repository=https://github.com/YunFeng86/pt-gen-universal)
 
-[![Use EdgeOne Pages to deploy](https://cdnstatic.tencentcs.com/edgeone/pages/deploy.svg)](https://edgeone.ai/pages/new?repository-url=https%3A%2F%2Fgithub.com%2FYunFeng86%2Fpt-gen-universal&install-command=corepack%20enable%20%26%26%20pnpm%20install%20--frozen-lockfile&build-command=pnpm%20run%20build%3Aedgeone&output-directory=.&env=APIKEY%2CTMDB_API_KEY%2CDOUBAN_COOKIE%2CINDIENOVA_COOKIE)
+[![Use EdgeOne Pages to deploy](https://cdnstatic.tencentcs.com/edgeone/pages/deploy.svg)](https://edgeone.ai/pages/new?repository-url=https%3A%2F%2Fgithub.com%2FYunFeng86%2Fpt-gen-universal&install-command=corepack%20enable%20%26%26%20pnpm%20install%20--frozen-lockfile&build-command=pnpm%20run%20build%3Aedgeone&output-directory=.)
 
 ### 合并后发布模板再启用
 
@@ -96,6 +94,20 @@ pnpm run dev:cf
 
 ## 部署说明
 
+### 部署变量说明
+
+以下说明适用于 Cloudflare、Vercel、Netlify、EdgeOne、Railway、Zeabur：
+
+- `APIKEY`：可选；如果服务公开暴露在公网，强烈建议设置，用于保护 API
+- `TMDB_API_KEY`：可选；只有使用 TMDB 相关搜索或详情能力时才需要
+- `DOUBAN_COOKIE`：可选；用于提升部分网络环境下的豆瓣抓取成功率
+- `INDIENOVA_COOKIE`：可选；仅在 Indienova 抓取受限时再补充
+- `PT_GEN_STORE`：Cloudflare / EdgeOne 推荐配置；用于持久化缓存，不配置时会回退到内存缓存
+- `UPSTASH_REDIS_REST_URL` / `UPSTASH_REDIS_REST_TOKEN`：Vercel 推荐配置；用于持久化缓存，不配置时会回退到内存缓存
+- `REDIS_URL`：Railway / Zeabur / Node fallback 推荐配置；用于持久化缓存，不配置时会回退到内存缓存
+
+如果你只是先验证服务能否跑起来，通常只需要按目标站点补必要变量；如果要长期稳定运行，再补上对应平台的持久化缓存变量。
+
 ### Cloudflare Workers
 
 - 入口：`src/adapters/cloudflare.ts`
@@ -118,7 +130,7 @@ pnpm dlx wrangler secret put INDIENOVA_COOKIE
 - 路由：由 `vercel.json` 把所有请求重写到 Edge 入口
 - 缓存：默认使用 Upstash / Marketplace Redis
 
-至少建议配置：
+常见按需配置：
 
 - `APIKEY`
 - `TMDB_API_KEY`
@@ -126,6 +138,8 @@ pnpm dlx wrangler secret put INDIENOVA_COOKIE
 - `UPSTASH_REDIS_REST_TOKEN`
 - `DOUBAN_COOKIE`
 - `INDIENOVA_COOKIE`
+
+具体是否需要填写，请以上方“部署变量说明”为准，并根据你的目标站点与缓存需求决定。
 
 ### Netlify
 
