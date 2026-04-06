@@ -26,6 +26,18 @@
 
 部署完成后，你的服务将立即可用。
 
+### 部署到 Vercel
+
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2FYunFeng86%2Fpt-gen-universal&env=APIKEY,TMDB_API_KEY,DOUBAN_COOKIE,INDIENOVA_COOKIE&envDescription=PT-Gen%20%E9%85%8D%E7%BD%AE%E5%8F%98%E9%87%8F&envLink=https%3A%2F%2Fgithub.com%2FYunFeng86%2Fpt-gen-universal%23%25E9%2585%258D%25E7%25BD%25AE)
+
+点击上方 **Deploy with Vercel** 按钮，按照提示完成部署：
+
+1. 授权并克隆 GitHub 仓库到你的账号
+2. 配置环境变量（可选，也可部署后在 Vercel Dashboard 中添加）
+3. 自动构建并部署
+
+> **注意**：Vercel 部署使用内存缓存，函数实例回收后缓存会丢失。如需持久化缓存，推荐使用 Cloudflare Workers 部署。
+
 ### 手动部署 Cloudflare Workers
 
 **环境要求：Node.js v18.0.0+**（Wrangler 支持 Node.js Current/Active/Maintenance 版本）
