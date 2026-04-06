@@ -1,5 +1,5 @@
 {
-  "installCommand": "corepack enable && pnpm install --frozen-lockfile",
-  "buildCommand": "pnpm run build:edgeone",
+  "installCommand": "npx pnpm@9.15.9 install --frozen-lockfile",
+  "buildCommand": "npx pnpm@9.15.9 run build:edgeone",
   "outputDirectory": "."
 }
