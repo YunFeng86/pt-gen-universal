@@ -3,6 +3,17 @@
  * 定义了应用运行时所需的各种配置项，包括请求头、超时设置等。
  */
 
+export type StorageProvider =
+  | 'auto'
+  | 'memory'
+  | 'cloudflare-kv'
+  | 'vercel-redis'
+  | 'netlify-blobs'
+  | 'edgeone-kv'
+  | 'redis';
+
+export type RateLimitMode = 'off' | 'best-effort';
+
 export interface AppConfig {
   // 豆瓣配置
   doubanCookie?: string;
@@ -30,6 +41,8 @@ export interface AppConfig {
   htmlPage?: string;
   cacheTTL?: number;
   rateLimitPerMinute?: number;
+  rateLimitMode?: RateLimitMode;
+  storageProvider?: StorageProvider;
 
   // 通用配置
   timeout?: number;

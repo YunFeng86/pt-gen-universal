@@ -1,0 +1,13 @@
+services:
+  app:
+    source:
+      type: git
+    runtime: nodejs
+    installCommand: corepack enable && pnpm install --frozen-lockfile
+    buildCommand: pnpm run build:vercel
+    startCommand: pnpm run start:node
+    env:
+      NODE_ENV: production
+      REDIS_URL: ${redis.REDIS_URL}
+  redis:
+    template: redis

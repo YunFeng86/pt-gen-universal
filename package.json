@@ -2,13 +2,19 @@
   "name": "pt-gen-universal",
   "version": "2.0.0",
   "description": "PT-Gen on server and serverless platforms",
-  "main": "src/adapters/cloudflare.ts",
+  "packageManager": "pnpm@9.15.9",
+  "main": "src/adapters/node.ts",
   "type": "module",
   "scripts": {
+    "dev": "tsx watch --env-file=.env src/adapters/node.ts",
     "dev:cf": "wrangler dev",
     "dev:bun": "bun --hot src/adapters/bun.ts",
     "dev:node": "tsx watch --env-file=.env src/adapters/node.ts",
+    "start": "pnpm run start:node",
     "build:cf": "wrangler deploy",
+    "build:vercel": "pnpm exec tsc --noEmit",
+    "build:netlify": "pnpm exec tsc --noEmit",
+    "build:edgeone": "pnpm exec tsc --noEmit",
     "start:bun": "bun src/adapters/bun.ts",
     "start:node": "tsx --env-file=.env src/adapters/node.ts",
     "build": "wrangler build",
@@ -19,11 +25,12 @@
     "format:check": "prettier --check \"**/*.{ts,js,json,md}\"",
     "test": "vitest",
     "test:ui": "vitest --ui",
-    "test:run": "vitest run"
+    "test:run": "vitest run",
+    "check": "pnpm exec tsc --noEmit && pnpm run test:run && pnpm run build"
   },
   "engines": {
-    "node": ">=20.6.0",
-    "bun": ">=1.0.0"
+    "node": ">=20.18.0",
+    "pnpm": ">=9 <10"
   },
   "author": "YunFeng <YunFengZero@outlook.com>",
   "forkedFrom": "github.com/Rhilip/pt-gen-cfworker",
@@ -32,10 +39,13 @@
   ],
   "license": "MIT",
   "dependencies": {
+    "@netlify/blobs": "^10.7.4",
     "@hono/node-server": "^1.13.7",
+    "@upstash/redis": "^1.37.0",
     "cheerio": "^1.1.2",
     "hono": "^4.11.7",
-    "html2bbcode": "^1.2.6"
+    "html2bbcode": "^1.2.6",
+    "redis": "^5.11.0"
   },
   "devDependencies": {
     "@types/node": "^25.0.9",

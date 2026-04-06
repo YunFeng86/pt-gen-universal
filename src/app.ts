@@ -137,14 +137,8 @@ export function createCacheMiddleware(storage: Storage, cacheTTL: number) {
     try {
       const clonedRes = c.res.clone();
       const data = await clonedRes.json();
-      const write = cache.set(cacheKey, data);
-      // Use waitUntil for Cloudflare Workers, fire-and-forget for Node/Bun
-      const execCtx = (c as any).executionCtx;
-      if (execCtx?.waitUntil) {
-        execCtx.waitUntil(write);
-      } else {
-        write.catch(() => {}); // Prevent unhandled rejection
-      }
+      // 首版默认同步写入，避免不同平台对后台任务生命周期的差异导致缓存写入丢失。
+      await cache.set(cacheKey, data);
     } catch {
       // Never let cache serialization/write failures break the response.
     }
@@ -254,9 +248,10 @@ export function createApp(storage: Storage, config: AppConfig = {}) {
   // 全局 CORS 中间件
   app.use('*', cors());
 
-  // Rate Limiting（如果配置了限制）
+  // Rate Limiting（仅在 best-effort 模式且阈值大于 0 时启用）
   const rateLimit = config.rateLimitPerMinute ?? 0;
-  if (rateLimit > 0) {
+  const rateLimitMode = config.rateLimitMode ?? 'off';
+  if (rateLimitMode === 'best-effort' && rateLimit > 0) {
     app.use('/api/*', createRateLimitMiddleware(storage, rateLimit));
   }
 

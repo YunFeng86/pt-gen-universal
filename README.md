@@ -1,406 +1,306 @@
-# PT-Gen 跨平台版
+# PT-Gen Universal
 
 [![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2FYunFeng86%2Fpt-gen-universal.svg?type=shield&issueType=license)](https://app.fossa.com/projects/git%2Bgithub.com%2FYunFeng86%2Fpt-gen-universal?ref=badge_shield&issueType=license)
 
-基于 [Rhilip/pt-gen-cfworker](https://github.com/Rhilip/pt-gen-cfworker) 改写，使用 [Hono](https://hono.dev/) 框架重构为跨平台架构。
+基于 [Rhilip/pt-gen-cfworker](https://github.com/Rhilip/pt-gen-cfworker) 改写，使用 [Hono](https://hono.dev/) 重构为多平台部署版本。
 
-## 特性
+这一版以 `pnpm` 为主，采用 “Edge-first 核心 + 平台薄适配层”：
 
-- **跨平台支持**：Cloudflare Workers / Node.js / Bun 三种运行时
-- **开发体验提升**：本地秒启动，支持热重载
-- **API V2**：标准化的 JSON 响应，原生支持 JSON/BBCode/Markdown 多种输出格式
-- **TypeScript 重构**：核心逻辑完全采用 TypeScript 编写，类型安全
-- **三层架构**：Scraper / Normalizer / Formatter 解耦设计
+- Edge 平台：Cloudflare Workers、Vercel Edge、Netlify Edge、EdgeOne Edge Functions
+- Node fallback 平台：Railway、Zeabur
+- 本地开发：Node.js 为主，Bun 保留兼容入口但不再作为主分发路径
 
-## 快速开始
+## 平台矩阵
 
-### 一键部署到 Cloudflare Workers（推荐）
+| 平台 | 运行时 | 默认缓存后端 | 状态 |
+| --- | --- | --- | --- |
+| Cloudflare Workers | Edge | Cloudflare KV | 推荐主平台 |
+| Vercel | Edge Runtime | Upstash / Marketplace Redis | 支持 |
+| Netlify | Edge Functions | Netlify Blobs | 支持 |
+| EdgeOne | Edge Functions | Pages KV | 支持 |
+| Railway | Node.js Service | Redis | Node fallback |
+| Zeabur | Node.js Service | Redis | Node fallback |
+
+> 注意：Vercel 官方在 2025-12-08 更新的 Edge Runtime 文档中已经更推荐 Node.js runtime。本项目仍提供 Vercel Edge 入口，但 Cloudflare 仍然是首推平台。
+
+## 一键部署
+
+### 立即可用
 
 [![Deploy to Cloudflare Workers](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/YunFeng86/pt-gen-universal)
 
-点击上方 **Deploy to Cloudflare** 按钮，按照提示完成部署：
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2FYunFeng86%2Fpt-gen-universal&env=APIKEY,TMDB_API_KEY,UPSTASH_REDIS_REST_URL,UPSTASH_REDIS_REST_TOKEN,DOUBAN_COOKIE,INDIENOVA_COOKIE&envDescription=PT-Gen%20%E8%BF%90%E8%A1%8C%E6%89%80%E9%9C%80%E7%9A%84%20API%20%E5%AF%86%E9%92%A5%E3%80%81Redis%20REST%20%E5%8F%8A%20Cookie&envLink=https%3A%2F%2Fgithub.com%2FYunFeng86%2Fpt-gen-universal%23%E9%85%8D%E7%BD%AE)
 
-1. 授权 GitHub 仓库访问
-2. 连接 Cloudflare 账号
-3. 自动创建 KV 命名空间并部署
+[![Deploy to Netlify](https://www.netlify.com/img/deploy/button.svg)](https://app.netlify.com/start/deploy?repository=https://github.com/YunFeng86/pt-gen-universal)
 
-部署完成后，你的服务将立即可用。
+[![Use EdgeOne Pages to deploy](https://cdnstatic.tencentcs.com/edgeone/pages/deploy.svg)](https://edgeone.ai/pages/new?repository-url=https%3A%2F%2Fgithub.com%2FYunFeng86%2Fpt-gen-universal&install-command=corepack%20enable%20%26%26%20pnpm%20install%20--frozen-lockfile&build-command=pnpm%20run%20build%3Aedgeone&output-directory=.&env=APIKEY%2CTMDB_API_KEY%2CDOUBAN_COOKIE%2CINDIENOVA_COOKIE)
 
-### 部署到 Vercel
+### 合并后发布模板再启用
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2FYunFeng86%2Fpt-gen-universal&env=APIKEY,TMDB_API_KEY,DOUBAN_COOKIE,INDIENOVA_COOKIE&envDescription=PT-Gen%20%E9%85%8D%E7%BD%AE%E5%8F%98%E9%87%8F&envLink=https%3A%2F%2Fgithub.com%2FYunFeng86%2Fpt-gen-universal%23%25E9%2585%258D%25E7%25BD%25AE)
+- Railway：仓库内已提供 `nixpacks.toml`，但真正的公开一键模板链接需要在 Railway 控制台创建并发布模板后生成
+- Zeabur：仓库内已提供 `zeabur-template.yaml`，Deploy Button 需要在 Zeabur Dashboard 创建模板后复制
 
-点击上方 **Deploy with Vercel** 按钮，按照提示完成部署：
+### GitHub Template
 
-1. 授权并克隆 GitHub 仓库到你的账号
-2. 配置环境变量（可选，也可部署后在 Vercel Dashboard 中添加）
-3. 自动构建并部署
+仓库代码层面已经为模板仓库使用做好准备，但真正启用 `Use this template` 还需要仓库管理员在 GitHub Settings 中手动开启 `Template repository`。
 
-> **注意**：Vercel 部署使用内存缓存，函数实例回收后缓存会丢失。如需持久化缓存，推荐使用 Cloudflare Workers 部署。
+## 当前交付状态
 
-### 手动部署 Cloudflare Workers
+### 仓库内已完成
 
-**环境要求：Node.js v18.0.0+**（Wrangler 支持 Node.js Current/Active/Maintenance 版本）
+- `pnpm` 主导的包管理、锁文件、Node 版本约束与主 CI
+- Hono 核心、runtime env 归一化、平台薄适配层与各平台部署配置文件
+- Cloudflare KV、Vercel Redis、Netlify Blobs、EdgeOne KV、Node Redis 等缓存适配器
+- `GET /`、legacy `/?url=`、认证入口、缓存异常降级等本地测试与 `wrangler build` 验证
+
+### 仓库外待执行
+
+- Railway 模板发布并生成真实模板链接
+- Zeabur 模板发布并生成真实按钮
+- GitHub 仓库开启 `Template repository`，公开页显示 `Use this template`
+- Cloudflare、Vercel、Netlify、EdgeOne 四个平台至少完成一次真实创建与部署 smoke
+
+## 快速开始
+
+### 环境要求
+
+- Node.js `20.18.0+`
+- `pnpm 9.15.9`
+
+建议使用 Corepack：
 
 ```bash
-# 克隆仓库
-git clone https://github.com/YunFeng86/pt-gen-universal.git
-cd pt-gen-universal
-
-# 安装依赖
-npm install
-
-# 本地开发
-npm run dev:cf
-
-# 部署到生产
-npm run deploy
+corepack enable
+corepack prepare pnpm@9.15.9 --activate
 ```
 
-本地开发默认访问：`http://127.0.0.1:8787`
-
-### Node.js（本地开发/VPS 部署）
-
-**环境要求：Node.js v20.6.0+**（需要支持 `--env-file` 和顶级 await）
+### 本地开发
 
 ```bash
-# 克隆仓库
 git clone https://github.com/YunFeng86/pt-gen-universal.git
 cd pt-gen-universal
-
-# 安装依赖
-npm install
-
-# 配置环境变量（可选）
+pnpm install --frozen-lockfile
 cp .env.example .env
-# 编辑 .env 文件填入配置
-
-# 启动服务器
-npm run start:node
-
-# 开发模式（热重载）
-npm run dev:node
+pnpm run dev
 ```
 
-开发模式默认访问：`http://localhost:3000`
+默认地址：`http://localhost:3000`
 
-> **注意**：本项目已全面迁移至 TypeScript，直接运行 `node` 命令无法启动。请使用 `npm run` 脚本，它们会自动调用 `tsx` 加载器。
-
-### Bun（高性能本地开发/VPS 部署）
-
-**环境要求：Bun v1.0.0+**
+### 本地模拟 Cloudflare
 
 ```bash
-# 克隆仓库
-git clone https://github.com/YunFeng86/pt-gen-universal.git
-cd pt-gen-universal
-
-# 安装依赖
-bun install
-
-# 配置环境变量（可选）
-cp .env.example .env
-# 编辑 .env 文件填入配置
-
-# 启动服务器
-npm run start:bun
-
-# 开发模式（热重载）
-npm run dev:bun
+pnpm run dev:cf
 ```
 
-开发模式默认访问：`http://localhost:3000`
+默认地址：`http://127.0.0.1:8787`
 
-## API 使用
-
-### 测试站点
-
-- 暂无
-
-### API 端点
-
-#### API v2（推荐）
-
-提供更规范的 JSON 响应和原生多格式支持。
-
-**简介生成（URL 模式）：**
-
-```
-GET /api/v2/info?url=https://movie.douban.com/subject/1292052/
-```
-
-**简介生成（POST 模式）：**
-
-```bash
-POST /api/v2/info
-Content-Type: application/json
-# 如果设置了 APIKEY，也可以用 header 传递（推荐用于 POST）
-# X-API-Key: your-api-key
-# Authorization: Bearer your-api-key
-
-{
-  "url": "https://movie.douban.com/subject/1292052/",
-  "format": "bbcode"
-}
-```
-
-**简介生成（RESTful 模式）：**
-
-```
-GET /api/v2/info/douban/1292052
-```
-
-**资源搜索：**
-
-```
-GET /api/v2/search?q=肖申克&source=douban
-```
-
-**参数说明：**
-
-- `url`: 资源链接
-- `format`: 输出格式，可选 `json` (默认), `bbcode`, `markdown`
-- `q`: 搜索关键词
-- `source`: 搜索源 (默认 `douban`)
-
-#### API v1（遗留/兼容）
-
-> **注意**：建议新集成的应用使用 API v2。
-
-**资源搜索：**
-
-```
-GET /api/v1/search?q=肖申克&source=douban
-```
-
-**简介生成（URL 模式）：**
-
-```
-GET /api/v1/info?url=https://movie.douban.com/subject/1292052/
-```
-
-**简介生成（RESTful 模式）：**
-
-```
-GET /api/v1/info/douban/1292052
-```
-
-#### 便捷别名
-
-为了方便使用，提供了无版本号的便捷别名，自动指向最新稳定版（当前为 v1）：
-
-```
-GET /api/search?q=肖申克&source=douban
-GET /api/info?url=https://movie.douban.com/subject/1292052/
-GET /api/info/douban/1292052
-```
-
-#### 旧 API 格式（兼容）
-
-```
-GET /?search=肖申克&source=douban
-GET /?url=https://movie.douban.com/subject/1292052/
-GET /?site=douban&sid=1292052
-```
-
-旧 API 会自动重定向到 v1 API。
-
-### 请求参数
-
-**资源搜索：**
-
-- `q` / `search`：搜索关键词
-- `source`：资源来源站点（见下表），默认 `douban`
-
-**简介生成（方法1，推荐）：**
-
-- `url`：资源链接（见下表支持格式）
-
-**简介生成（方法2）：**
-
-- `site`：资源来源站点
-- `sid`：资源在对应站点的唯一 ID
-
-## 支持资源站点
-
-|     站点      | 搜索 | 链接格式示例                                |
-| :-----------: | :--: | :------------------------------------------ |
-|  **douban**   |  ✅  | `https://movie.douban.com/subject/1292052/` |
-|   **imdb**    |  ✅  | `https://www.imdb.com/title/tt0111161/`     |
-|  **bangumi**  |  ✅  | `https://bgm.tv/subject/12345`              |
-|   **tmdb**    |  ✅  | `https://www.themoviedb.org/movie/278`      |
-|   **steam**   |  ✅  | `https://store.steampowered.com/app/730/`   |
-| **indienova** |  ✅  | `https://indienova.com/game/game-name`      |
-|    **gog**    |  ✅  | `https://www.gog.com/game/cyberpunk_2077`   |
-
-> **注意**：Steam 服务器限制 CF Worker 访问，使用CF Worker时相关功能可用性将下降。
-
-## 配置
+## 部署说明
 
 ### Cloudflare Workers
 
-#### 敏感信息配置（Secrets）
+- 入口：`src/adapters/cloudflare.ts`
+- 缓存：默认使用 `PT_GEN_STORE` KV 绑定
+- 构建：`pnpm run build`
+- 部署：`pnpm run deploy`
 
-**重要：** 敏感信息（API 密钥、Cookie）必须使用 [Secrets](https://developers.cloudflare.com/workers/configuration/secrets/)，不要写在 `wrangler.toml` 的 `[vars]` 中。
-
-**方式一：通过 Wrangler CLI（推荐）**
-
-```bash
-# 设置 API 密钥
-npx wrangler secret put APIKEY
-
-# 设置豆瓣 Cookie
-npx wrangler secret put DOUBAN_COOKIE
-
-# 设置 indienova Cookie
-npx wrangler secret put INDIENOVA_COOKIE
-```
-
-执行后会提示输入值，输入的内容不会显示在终端。
-
-**方式二：通过 Cloudflare Dashboard**
-
-1. 进入 **Workers & Pages** 页面
-2. 选择你的 Worker > **Settings**
-3. 在 **Variables and Secrets** 下选择 **Add**
-4. 类型选择 **Secret**，输入变量名和值
-5. 点击 **Deploy** 使更改生效
-
-**本地开发时的 Secrets**
-
-创建 `.dev.vars` 文件（已在 `.gitignore` 中）：
+Secrets 建议通过 Wrangler 注入：
 
 ```bash
-# .dev.vars（不要提交到 git）
-APIKEY=your-local-api-key
-DOUBAN_COOKIE=your-local-douban-cookie
-INDIENOVA_COOKIE=your-local-indienova-cookie
+pnpm dlx wrangler secret put APIKEY
+pnpm dlx wrangler secret put TMDB_API_KEY
+pnpm dlx wrangler secret put DOUBAN_COOKIE
+pnpm dlx wrangler secret put INDIENOVA_COOKIE
 ```
 
-运行 `npm run dev:cf` 时会自动加载此文件。
+### Vercel
 
-#### 非敏感变量配置
+- 入口：`api/[[...route]].ts` -> `src/index.ts`
+- 路由：由 `vercel.json` 把所有请求重写到 Edge 入口
+- 缓存：默认使用 Upstash / Marketplace Redis
 
-在 `wrangler.toml` 中配置：
+至少建议配置：
 
-```toml
-[vars]
-DISABLE_SEARCH = "false"
-```
+- `APIKEY`
+- `TMDB_API_KEY`
+- `UPSTASH_REDIS_REST_URL`
+- `UPSTASH_REDIS_REST_TOKEN`
+- `DOUBAN_COOKIE`
+- `INDIENOVA_COOKIE`
 
-#### KV 命名空间配置
+### Netlify
 
-一键部署会自动创建 KV 命名空间。手动部署时：
+- 入口：`netlify/edge-functions/app.ts`
+- 路由：由 `netlify.toml` 将 `/*` 全量交给 edge function
+- 缓存：默认使用 Netlify Blobs
+
+### EdgeOne
+
+- 入口：`edge-functions/index.ts` 和 `edge-functions/[[default]].ts`
+- 缓存：默认使用 `PT_GEN_STORE` Pages KV 绑定
+- 构建配置：`edgeone.json`
+
+### Railway
+
+- 运行时：Node.js fallback
+- 构建：`nixpacks.toml`
+- 启动：`pnpm run start:node`
+- 缓存：默认使用 `REDIS_URL`
+
+推荐在 Railway 项目中同时创建：
+
+- 一个应用服务，指向本仓库
+- 一个 Redis 服务，并把 `REDIS_URL` 注入应用服务
+
+### Zeabur
+
+- 运行时：Node.js fallback
+- 模板文件：`zeabur-template.yaml`
+- 启动：`pnpm run start:node`
+- 缓存：默认使用 `REDIS_URL`
+
+## 配置
+
+### 通用变量
+
+| 变量 | 说明 |
+| --- | --- |
+| `APIKEY` | API 访问密钥 |
+| `TMDB_API_KEY` | TMDB API 密钥 |
+| `DOUBAN_COOKIE` | 豆瓣 Cookie |
+| `INDIENOVA_COOKIE` | Indienova Cookie |
+| `DISABLE_SEARCH` | 是否禁用搜索 |
+| `CACHE_TTL` | 缓存 TTL，单位秒 |
+| `STORAGE_PROVIDER` | `auto` / `memory` / `cloudflare-kv` / `vercel-redis` / `netlify-blobs` / `edgeone-kv` / `redis` |
+| `CACHE_STORE_NAME` | 逻辑缓存名，默认 `pt-gen-cache` |
+| `RATE_LIMIT_MODE` | `off` / `best-effort`；`off` 会强制关闭请求级限流 |
+| `RATE_LIMIT_PER_MINUTE` | 请求级限流阈值，仅在 `RATE_LIMIT_MODE=best-effort` 时生效 |
+| `REQUEST_TIMEOUT_MS` | 通用抓取超时 |
+| `PROXY_URL` | 可选抓取中转 |
+| `PROXY_ALLOW_SENSITIVE_HEADERS` | 是否允许转发敏感请求头到中转 |
+
+### 平台存储变量
+
+| 变量 | 平台 | 说明 |
+| --- | --- | --- |
+| `PT_GEN_STORE` | Cloudflare / EdgeOne | KV 绑定 |
+| `UPSTASH_REDIS_REST_URL` | Vercel / 任意支持 REST 的环境 | Upstash REST 地址 |
+| `UPSTASH_REDIS_REST_TOKEN` | Vercel / 任意支持 REST 的环境 | Upstash REST Token |
+| `KV_REST_API_URL` | Vercel 兼容别名 | REST 地址兼容变量 |
+| `KV_REST_API_TOKEN` | Vercel 兼容别名 | REST Token 兼容变量 |
+| `REDIS_URL` | Railway / Zeabur / Node | Redis 连接串 |
+
+### 当前默认策略
+
+- `STORAGE_PROVIDER=auto` 时按平台自动选择后端
+- `RATE_LIMIT_MODE` 默认 `off`，即使设置了 `RATE_LIMIT_PER_MINUTE` 也不会启用请求级限流
+- 只有 `RATE_LIMIT_MODE=best-effort` 且 `RATE_LIMIT_PER_MINUTE > 0` 时，才启用实例内 best-effort 请求级限流
+- scraper 内部的 token bucket 仍然只是实例内 best-effort 节流，不是分布式全局限流
+
+## API
+
+### 推荐接口
 
 ```bash
-# 创建 KV 命名空间
-npx wrangler kv:namespace create "PT_GEN_STORE"
-
-# 将返回的 ID 填入 wrangler.toml
-# kv_namespaces = [
-#   { binding = "PT_GEN_STORE", id = "your-kv-namespace-id" }
-# ]
+GET /api/v2/info?url=https://movie.douban.com/subject/1292052/
+GET /api/v2/search?q=肖申克&source=douban
+POST /api/v2/info
 ```
 
-### Node.js / Bun
-
-复制 `.env.example` 为 `.env` 并填入配置：
+`POST /api/v2/info` 示例：
 
 ```bash
-cp .env.example .env
+curl -X POST "http://localhost:3000/api/v2/info" \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: your-api-key" \
+  -d '{
+    "url": "https://movie.douban.com/subject/1292052/",
+    "format": "bbcode"
+  }'
 ```
 
-编辑 `.env` 文件：
+### 兼容入口
+
+以下入口保持兼容：
+
+- `GET /api/v1/search`
+- `GET /api/v1/info`
+- `GET /api/v1/info/:site/:sid`
+- `GET /api/search`
+- `GET /api/info`
+- `GET /?search=...`
+- `GET /?url=...`
+- `GET /?site=...&sid=...`
+
+### API Key 传递方式
+
+支持以下三种方式：
+
+- Query：`?apikey=xxx`
+- Header：`X-API-Key: xxx`
+- Header：`Authorization: Bearer xxx`
+
+## 支持资源站点
+
+| 站点 | 搜索 | 示例 |
+| --- | --- | --- |
+| douban | ✅ | `https://movie.douban.com/subject/1292052/` |
+| imdb | ✅ | `https://www.imdb.com/title/tt0111161/` |
+| bangumi | ✅ | `https://bgm.tv/subject/12345` |
+| tmdb | ✅ | `https://www.themoviedb.org/movie/278` |
+| steam | ✅ | `https://store.steampowered.com/app/730/` |
+| indienova | ✅ | `https://indienova.com/game/game-name` |
+| gog | ✅ | `https://www.gog.com/game/cyberpunk_2077` |
+
+## 项目结构
+
+```text
+src/
+  adapters/            # Cloudflare / Node / Bun 入口
+  runtime/             # 运行时环境归一化与平台 runtime factory
+  storage/             # Memory / KV / Redis / Blobs 存储适配器
+  controllers/         # API v1 / v2
+  cache/               # 缓存逻辑
+  middleware/          # 认证、限流等中间件
+lib/
+  scrapers/            # 站点抓取
+  normalizers/         # 数据归一化
+  formatters/          # 输出格式化
+api/                   # Vercel Edge 入口
+netlify/edge-functions/# Netlify Edge 入口
+edge-functions/        # EdgeOne Edge 入口
+```
+
+## 开发与验证
 
 ```bash
-APIKEY=your-api-key
-DISABLE_SEARCH=false
-PORT=3000
-PROXY_URL=
-PROXY_ALLOW_SENSITIVE_HEADERS=false
-DOUBAN_COOKIE=your-douban-cookie
-INDIENOVA_COOKIE=your-indienova-cookie
+pnpm exec tsc --noEmit
+pnpm run test:run
+pnpm run build
 ```
 
-### 环境变量说明
+GitHub Actions 已改为使用 `pnpm 9.15.9 + Node 20.18.0`。
 
-|              变量               | 说明                                                                                                                      |
-| :-----------------------------: | :------------------------------------------------------------------------------------------------------------------------ |
-|            `APIKEY`             | API 访问密钥。可用 query `?apikey={APIKEY}`，或 header `X-API-Key: {APIKEY}` / `Authorization: Bearer {APIKEY}`           |
-|        `DISABLE_SEARCH`         | 设置为 `"true"` 时禁用搜索功能                                                                                            |
-|           `CACHE_TTL`           | 缓存过期时间（秒），默认 172800（2天）。设置为 0 禁用缓存（仅缓存 GET /api/\*）                                           |
-|           `PROXY_URL`           | 可选：抓取中转（URL relay），用于网络受限环境。支持前缀模式或模板模式（`{url}` / `{urlEncoded}`），详见 `.env.example`    |
-| `PROXY_ALLOW_SENSITIVE_HEADERS` | 可选：允许在使用 `PROXY_URL` 时转发敏感请求头（Cookie/Authorization）。默认 `false` 更安全；仅在你完全信任/自建中转时开启 |
-|         `TMDB_API_KEY`          | TMDB API 密钥，用于访问 TMDB 资源。获取地址：https://www.themoviedb.org/settings/api                                      |
-|         `DOUBAN_COOKIE`         | 豆瓣 Cookie，用于访问登录可见资源                                                                                         |
-|       `INDIENOVA_COOKIE`        | indienova Cookie（[#15](https://github.com/Rhilip/pt-gen-universal/issues/15)）                                           |
-|             `PORT`              | Node.js/Bun 服务器端口（默认 3000）                                                                                       |
-|         `PT_GEN_STORE`          | KV 存储命名空间（仅 CF Workers，在 wrangler.toml 配置）                                                                   |
+## 平台限制
 
-### 安全最佳实践
+- Cloudflare KV 与 Netlify Blobs 都更适合作为缓存，不适合作为严格一致性的分布式计数器
+- Vercel Edge 兼容但官方更推荐 Node.js runtime，因此如果你不强依赖 Edge，就优先考虑 Node runtime
+- Railway 与 Zeabur 本轮属于 Node fallback，不承诺 Edge 运行时
+- Railway 和 Zeabur 的公开 Deploy Button 需要先在各自平台发布模板后才能生成
+- GitHub Template 需要仓库管理员在 Settings 中启用
 
-**Cloudflare Workers：**
+## 参考文档
 
-- ✅ 使用 Secrets 存储敏感信息（APIKEY、Cookie）
-- ✅ 本地开发使用 `.dev.vars`（已在 `.gitignore`）
-- ❌ 不要在 `wrangler.toml` 的 `[vars]` 中写敏感信息
-- ❌ 不要提交 `.dev.vars` 到 git
-
-**Node.js / Bun：**
-
-- ✅ 使用 `.env` 文件存储配置（已在 `.gitignore`）
-- ✅ 参考 `.env.example` 创建你的 `.env`
-- ❌ 不要提交 `.env` 到 git
-- ❌ 不要在代码中硬编码敏感信息
-
-## 技术架构
-
-### 技术栈
-
-- **框架**：[Hono](https://hono.dev/) - 轻量级 Web 框架
-- **运行时**：Cloudflare Workers / Node.js / Bun
-- **存储**：Cloudflare KV（Serverless）/ Memory（Server）
-- **模块系统**：ES Module
-- **依赖**：cheerio 1.1.2、html2bbcode、@hono/node-server
-
-### 项目结构
-
-```
-pt-gen-universal/
-├── src/
-│   ├── app.ts                 # 核心业务逻辑（平台无关）
-│   ├── storage/               # 存储抽象层
-│   │   ├── interface.ts       # 存储接口定义
-│   │   ├── cloudflare.ts      # CF KV 适配器
-│   │   └── memory.ts          # 内存适配器（Node.js/Bun）
-│   ├── adapters/              # 平台适配器
-│   │   ├── cloudflare.ts      # CF Workers 入口
-│   │   ├── node.ts            # Node.js 入口
-│   │   └── bun.ts             # Bun 入口
-│   └── controllers/           # API 控制器
-│       ├── v1.ts              # V1 接口逻辑
-│       └── v2.ts              # V2 接口逻辑
-├── lib/                       # 站点处理模块
-│   ├── scrapers/              # 数据抓取层
-│   ├── normalizers/           # 数据清洗层
-│   ├── formatters/            # 数据格式化层
-│   ├── orchestrator.ts        # 核心控制器
-│   ├── types/                 # 类型定义
-│   ├── const.ts               # 常量定义
-│   ├── errors.ts              # 错误处理
-│   └── utils/                 # 工具函数
-├── index.html                 # Web UI
-├── package.json
-└── wrangler.toml              # CF Workers 配置
-```
-
-### 核心特性
-
-1. **平台无关性**：核心业务逻辑与运行时解耦
-2. **存储抽象**：统一的存储接口，支持 KV 和内存两种实现
-3. **路由优化**：使用 Map 替代 if-else，消除重复代码
-4. **中间件架构**：统一处理缓存、CORS、APIKEY 验证
-
-## License
-
-[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2FYunFeng86%2Fpt-gen-universal.svg?type=large&issueType=license)](https://app.fossa.com/projects/git%2Bgithub.com%2FYunFeng86%2Fpt-gen-universal?ref=badge_large&issueType=license)
+- Cloudflare Builds: <https://developers.cloudflare.com/workers/ci-cd/builds/build-image/>
+- Cloudflare Node.js compatibility: <https://developers.cloudflare.com/workers/runtime-apis/nodejs/>
+- Cloudflare KV FAQ: <https://developers.cloudflare.com/kv/reference/faq/>
+- Vercel Edge Runtime: <https://vercel.com/docs/functions/runtimes/edge>
+- Vercel Deploy Button: <https://vercel.com/docs/deploy-button>
+- Netlify Edge Functions API: <https://docs.netlify.com/build/edge-functions/api/>
+- Netlify Blobs: <https://docs.netlify.com/build/data-and-storage/netlify-blobs/>
+- Netlify Deploy Button: <https://docs.netlify.com/site-deploys/create-deploys/>
+- EdgeOne Deploy Button: <https://pages.edgeone.ai/document/deploy-button>
+- EdgeOne Pages KV 集成: <https://pages.edgeone.ai/zh/document/pages-kv-integration>
+- Railway Templates: <https://docs.railway.com/guides/templates>
+- Zeabur Template Format: <https://zeabur.com/docs/en-US/template/template-in-code>
+- Zeabur Deploy Button: <https://zeabur.com/docs/en-US/deploy/deploy-button>
+- GitHub Template Repository: <https://docs.github.com/en/repositories/creating-and-managing-repositories/creating-a-template-repository>

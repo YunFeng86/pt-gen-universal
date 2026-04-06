@@ -1,0 +1,8 @@
+[build]
+  command = "pnpm run build:netlify"
+  publish = "."
+  edge_functions = "netlify/edge-functions"
+
+[[edge_functions]]
+  function = "app"
+  path = "/*"
