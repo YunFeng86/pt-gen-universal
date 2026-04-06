@@ -42,7 +42,7 @@
 
 ### GitHub Template
 
-仓库代码层面已经为模板仓库使用做好准备，但真正启用 `Use this template` 还需要仓库管理员在 GitHub Settings 中手动开启 `Template repository`。
+当前仓库已经开启 GitHub Template，公开页会显示 `Use this template` / `Public template`，可直接作为模板仓库使用。
 
 ## 当前交付状态
 
@@ -51,13 +51,13 @@
 - `pnpm` 主导的包管理、锁文件、Node 版本约束与主 CI
 - Hono 核心、runtime env 归一化、平台薄适配层与各平台部署配置文件
 - Cloudflare KV、Vercel Redis、Netlify Blobs、EdgeOne KV、Node Redis 等缓存适配器
+- GitHub 仓库已开启 `Template repository`
 - `GET /`、legacy `/?url=`、认证入口、缓存异常降级等本地测试与 `wrangler build` 验证
 
 ### 仓库外待执行
 
 - Railway 模板发布并生成真实模板链接
 - Zeabur 模板发布并生成真实按钮
-- GitHub 仓库开启 `Template repository`，公开页显示 `Use this template`
 - Cloudflare、Vercel、Netlify、EdgeOne 四个平台至少完成一次真实创建与部署 smoke
 
 ## 快速开始
