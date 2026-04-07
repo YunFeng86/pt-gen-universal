@@ -62,7 +62,7 @@
 
 ### 环境要求
 
-- Node.js `20.18.0+`
+- Node.js `20.19.0+`
 - `pnpm 9.15.9`
 
 建议使用 Corepack：
@@ -292,7 +292,7 @@ pnpm run test:run
 pnpm run build
 ```
 
-GitHub Actions 已改为使用 `pnpm 9.15.9 + Node 20.18.0`。
+GitHub Actions 已改为使用 `pnpm 9.15.9 + Node 20.19.0`。
 
 ## 平台限制
 

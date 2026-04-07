@@ -29,7 +29,7 @@
     "check": "pnpm exec tsc --noEmit && pnpm run test:run && pnpm run build"
   },
   "engines": {
-    "node": ">=20.18.0",
+    "node": ">=20.19.0",
     "pnpm": ">=9 <10"
   },
   "author": "YunFeng <YunFengZero@outlook.com>",
