@@ -126,7 +126,11 @@ export function createRuntimeSetup(context: RuntimeContext): NormalizedRuntimeSe
     disableSearch: parseBooleanEnv(values.DISABLE_SEARCH) ?? false,
     enableDebug: parseBooleanEnv(values.ENABLE_DEBUG) ?? false,
     cacheTTL: parseNumberEnv(values.CACHE_TTL),
-    htmlPage: createHomePage(context.platform, storageProvider),
+    htmlPage: createHomePage({
+      platform: context.platform,
+      storageProvider,
+      searchEnabled: !(parseBooleanEnv(values.DISABLE_SEARCH) ?? false),
+    }),
     proxyUrl: values.PROXY_URL,
     proxyAllowSensitiveHeaders: parseBooleanEnv(values.PROXY_ALLOW_SENSITIVE_HEADERS) ?? false,
     tmdbApiKey: values.TMDB_API_KEY,

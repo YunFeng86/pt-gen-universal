@@ -78,11 +78,12 @@ corepack prepare pnpm@9.15.9 --activate
 git clone https://github.com/YunFeng86/pt-gen-universal.git
 cd pt-gen-universal
 pnpm install --frozen-lockfile
-cp .env.example .env
 pnpm run dev
 ```
 
 默认地址：`http://localhost:3000`
+
+如需覆盖默认配置，再执行 `cp .env.example .env` 并按需填写变量；没有 `.env` 时会直接使用默认端口和内存缓存启动。
 
 ### 本地模拟 Cloudflare
 

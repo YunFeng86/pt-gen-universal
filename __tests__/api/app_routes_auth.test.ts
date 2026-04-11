@@ -5,11 +5,21 @@ import { MemoryStorage } from '../../src/storage/memory';
 import { createHomePage } from '../../src/runtime/page';
 
 function createAuthApp(overrides: AppConfig = {}) {
-  return createApp(new MemoryStorage(), {
+  const config: AppConfig = {
     apikey: 'secret',
     cacheTTL: 0,
-    htmlPage: createHomePage('node', 'memory'),
     ...overrides,
+  };
+
+  return createApp(new MemoryStorage(), {
+    ...config,
+    htmlPage:
+      config.htmlPage ??
+      createHomePage({
+        platform: 'node',
+        storageProvider: 'memory',
+        searchEnabled: !(config.disableSearch ?? false),
+      }),
   });
 }
 
@@ -20,7 +30,7 @@ describe('app routes and auth smoke', () => {
 
     expect(res.status).toBe(200);
     expect(res.headers.get('content-type')).toContain('text/html');
-    expect(await res.text()).toContain('PT-Gen Universal');
+    expect(await res.text()).toContain('PT Gen - 资源信息生成工具');
   });
 
   it('redirects legacy /?url= requests to v1 info', async () => {
@@ -33,6 +43,23 @@ describe('app routes and auth smoke', () => {
     expect(res.headers.get('location')).toBe(
       '/api/v1/info?url=https%3A%2F%2Fmovie.douban.com%2Fsubject%2F1292052%2F'
     );
+  });
+
+  it('injects disabled search config into the homepage when search is off', async () => {
+    const app = createAuthApp({
+      apikey: undefined,
+      disableSearch: true,
+    });
+
+    const homeRes = await app.request('http://localhost/');
+    expect(homeRes.status).toBe(200);
+    expect(await homeRes.text()).toContain('{"searchEnabled":false}');
+
+    const searchRes = await app.request('http://localhost/api/v1/search?search=test');
+    expect(searchRes.status).toBe(403);
+    expect(await searchRes.json()).toMatchObject({
+      error: 'this ptgen disallow search',
+    });
   });
 
   it('accepts apikey via query string', async () => {
