@@ -10,11 +10,14 @@
     "dev:cf": "wrangler dev",
     "dev:bun": "bun --hot src/adapters/bun.ts",
     "dev:node": "tsx watch src/adapters/node.ts",
+    "generate:homepage": "node scripts/generate-homepage.mjs",
+    "check:homepage": "node scripts/generate-homepage.mjs --check",
+    "check:runtime-entries": "pnpm exec tsx scripts/smoke-runtime-entries.mjs",
     "start": "pnpm run start:node",
     "build:cf": "wrangler deploy",
-    "build:vercel": "pnpm exec tsc --noEmit",
-    "build:netlify": "pnpm exec tsc --noEmit",
-    "build:edgeone": "pnpm exec tsc --noEmit",
+    "build:vercel": "pnpm run check:homepage && pnpm exec tsc --noEmit",
+    "build:netlify": "pnpm run check:homepage && pnpm exec tsc --noEmit",
+    "build:edgeone": "pnpm run check:homepage && pnpm exec tsc --noEmit",
     "start:bun": "bun src/adapters/bun.ts",
     "start:node": "tsx src/adapters/node.ts",
     "build": "wrangler build",
@@ -26,7 +29,7 @@
     "test": "vitest",
     "test:ui": "vitest --ui",
     "test:run": "vitest run",
-    "check": "pnpm exec tsc --noEmit && pnpm run test:run && pnpm run build"
+    "check": "pnpm run check:homepage && pnpm run check:runtime-entries && pnpm exec tsc --noEmit && pnpm run test:run && pnpm run build"
   },
   "engines": {
     "node": ">=20.19.0",

@@ -13,5 +13,5 @@
     "isolatedModules": true,
     "types": ["node", "vitest/globals"]
   },
-  "include": ["src", "lib", "__tests__"]
+  "include": ["src", "lib", "api", "edge-functions", "netlify/edge-functions", "__tests__"]
 }

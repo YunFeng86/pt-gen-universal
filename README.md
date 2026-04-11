@@ -33,7 +33,7 @@
 
 [![Use EdgeOne Pages to deploy](https://cdnstatic.tencentcs.com/edgeone/pages/deploy.svg)](https://edgeone.ai/pages/new?repository-url=https%3A%2F%2Fgithub.com%2FYunFeng86%2Fpt-gen-universal&install-command=npx%20pnpm%409.15.9%20install%20--frozen-lockfile&build-command=npx%20pnpm%409.15.9%20run%20build%3Aedgeone&output-directory=.)
 
-### 合并后发布模板再启用
+### 合并后发布模板再启用（TODO）
 
 - Railway：仓库内已提供 `nixpacks.toml`，但真正的公开一键模板链接需要在 Railway 控制台创建并发布模板后生成
 - Zeabur：仓库内已提供 `zeabur-template.yaml`，Deploy Button 需要在 Zeabur Dashboard 创建模板后复制
@@ -219,6 +219,7 @@ pnpm dlx wrangler secret put INDIENOVA_COOKIE
 GET /api/v2/info?url=https://movie.douban.com/subject/1292052/
 GET /api/v2/search?q=肖申克&source=douban
 POST /api/v2/info
+POST /api/v2/info/douban/1292052
 ```
 
 `POST /api/v2/info` 示例：
@@ -232,6 +233,11 @@ curl -X POST "http://localhost:3000/api/v2/info" \
     "format": "bbcode"
   }'
 ```
+
+`/api/v2/info` 的资源定位优先级如下：
+
+- `GET/POST /api/v2/info/:site/:sid`：路径参数唯一决定资源；query/body 仅用于补充 `format`
+- `GET/POST /api/v2/info`：`POST body > query`；若最终存在 `url`，则优先按 `url` 解析并忽略 `site/sid`
 
 ### 兼容入口
 
@@ -263,8 +269,10 @@ curl -X POST "http://localhost:3000/api/v2/info" \
 | bangumi | ✅ | `https://bgm.tv/subject/12345` |
 | tmdb | ✅ | `https://www.themoviedb.org/movie/278` |
 | steam | ✅ | `https://store.steampowered.com/app/730/` |
-| indienova | ✅ | `https://indienova.com/game/game-name` |
+| indienova | ❌ | `https://indienova.com/game/game-name` |
 | gog | ✅ | `https://www.gog.com/game/cyberpunk_2077` |
+
+首页关键词搜索当前与实际能力保持一致，提供 `douban`、`imdb`、`bangumi`、`tmdb`、`steam`、`gog` 六个来源；`indienova` 仍支持直接粘贴链接生成详情，但不支持关键词搜索。
 
 ## 项目结构
 
@@ -288,6 +296,8 @@ edge-functions/        # EdgeOne Edge 入口
 ## 开发与验证
 
 ```bash
+pnpm run check:homepage
+pnpm run check:runtime-entries
 pnpm exec tsc --noEmit
 pnpm run test:run
 pnpm run build

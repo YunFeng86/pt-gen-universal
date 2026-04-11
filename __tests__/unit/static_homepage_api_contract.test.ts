@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
+import { SEARCHABLE_SITE_IDS } from '../../src/registry';
 import { createHomePage } from '../../src/runtime/page';
 
 describe('static homepage api contract', () => {
@@ -67,5 +68,13 @@ describe('static homepage api contract', () => {
     expect(html).toContain('if (hasDisplayText(item.year))');
     expect(html).toContain('if (hasDisplayText(item.subtitle))');
     expect(html).toContain('if (hasDisplayText(item.subtype))');
+  });
+
+  it('lists every searchable registry source on the homepage and keeps indienova as direct-link only', () => {
+    const optionValues = Array.from(html.matchAll(/<option value="([^"]+)">/g), (match) => match[1]);
+
+    expect(optionValues).toEqual(SEARCHABLE_SITE_IDS);
+    expect(optionValues).not.toContain('indienova');
+    expect(html).toContain('Indienova 当前支持直接粘贴链接生成');
   });
 });

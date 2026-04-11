@@ -476,6 +476,8 @@
                     <option value="imdb">IMDb</option>
                     <option value="bangumi">Bangumi</option>
                     <option value="tmdb">TMDB</option>
+                    <option value="steam">Steam</option>
+                    <option value="gog">GOG</option>
                 </select>
                 <div class="search-bar">
                     <input type="text" id="searchInput" placeholder="输入 链接 (http...) 或 关键词 (如: 肖申克的救赎)">
@@ -527,11 +529,12 @@
             <div style="color: var(--text-sub); font-size: 0.95rem; line-height: 1.8;">
                 <p style="margin-bottom: 1rem;"><strong style="color: var(--text-main);">快速开始:</strong></p>
                 <ol style="padding-left: 1.5rem; margin-bottom: 1.5rem;">
-                    <li style="margin-bottom: 0.5rem;">选择数据源 (豆瓣/IMDb/Bangumi/TMDB)</li>
+                    <li style="margin-bottom: 0.5rem;">选择数据源 (豆瓣/IMDb/Bangumi/TMDB/Steam/GOG)</li>
                     <li style="margin-bottom: 0.5rem;">输入关键词搜索,或直接粘贴完整链接</li>
                     <li style="margin-bottom: 0.5rem;">点击查询按钮,等待结果生成</li>
                     <li style="margin-bottom: 0.5rem;">复制生成的简介信息到 PT 站发布页面</li>
                 </ol>
+                <p style="margin-bottom: 1rem;">Indienova 当前支持直接粘贴链接生成，暂不支持关键词搜索。</p>
                 <p style="margin-bottom: 0.5rem;"><strong style="color: var(--text-main);">支持的链接格式:</strong></p>
                 <ul style="padding-left: 1.5rem; list-style: disc;">
                     <li>豆瓣: <code
@@ -545,6 +548,15 @@
                     </li>
                     <li>TMDB: <code
                             style="background: var(--input-bg); padding: 2px 6px; border-radius: 4px;">https://www.themoviedb.org/...</code>
+                    </li>
+                    <li>Steam: <code
+                            style="background: var(--input-bg); padding: 2px 6px; border-radius: 4px;">https://store.steampowered.com/app/...</code>
+                    </li>
+                    <li>GOG: <code
+                            style="background: var(--input-bg); padding: 2px 6px; border-radius: 4px;">https://www.gog.com/game/...</code>
+                    </li>
+                    <li>Indienova: <code
+                            style="background: var(--input-bg); padding: 2px 6px; border-radius: 4px;">https://indienova.com/game/...</code>
                     </li>
                 </ul>
             </div>

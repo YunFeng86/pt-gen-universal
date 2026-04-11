@@ -199,9 +199,10 @@ function setupRoutes(app: Hono, v1: V1Controller, v2: V2Controller, htmlPage: st
   app.get('/api/v2/info', (c) => v2.handleInfo(c));
   app.post('/api/v2/info', (c) => v2.handleInfo(c));
   app.get('/api/v2/info/:site/:sid', (c) => v2.handleInfo(c));
-  // Allow POST with RESTful path too, so body/query can still provide `format` while path provides site/sid.
+  // Allow POST with RESTful path too. Path params remain authoritative for resource selection;
+  // body/query can still provide auxiliary params such as `format`.
   app.post('/api/v2/info/:site/:sid', (c) => v2.handleInfo(c));
-  // Query is still the primary V2 interface; path params exist for convenience/compat.
+  // Query is still the primary V2 interface for non-RESTful callers; path params exist for convenience/compat.
 
   // ==================== Aliases (Legacy) ====================
 

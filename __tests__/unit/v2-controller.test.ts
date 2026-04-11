@@ -234,26 +234,56 @@ describe('V2Controller - 参数解析', () => {
   });
 
   describe('参数优先级验证', () => {
-    it('完整优先级：body > path > query', async () => {
+    it('路径路由应始终使用 path 中的 site/sid', async () => {
       const res = await app.request(
         '/api/v2/info/path-site/path-sid?site=query-site&sid=query-sid',
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ site: 'body-site', sid: 'body-sid' }),
+          body: JSON.stringify({
+            url: 'https://movie.douban.com/subject/3011091/',
+            site: 'body-site',
+            sid: 'body-sid',
+          }),
         }
       );
       expect(res.status).toBe(200);
-      // 应该使用 body 的参数
-      expect(mockOrchestrator.getMediaInfo).toHaveBeenCalledWith('body-site', 'body-sid');
+      expect(mockOrchestrator.matchUrl).not.toHaveBeenCalled();
+      expect(mockOrchestrator.getMediaInfo).toHaveBeenCalledWith('path-site', 'path-sid');
     });
 
-    it('部分参数优先级：body.url + query.format', async () => {
+    it('路径路由允许 body/query 补充 format，但不允许覆盖资源定位', async () => {
+      const res = await app.request('/api/v2/info/path-site/path-sid?format=markdown', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          url: 'https://movie.douban.com/subject/3011091/',
+          site: 'body-site',
+          sid: 'body-sid',
+          format: 'bbcode',
+        }),
+      });
+      expect(res.status).toBe(200);
+      expect(mockOrchestrator.matchUrl).not.toHaveBeenCalled();
+      expect(mockOrchestrator.getMediaInfo).toHaveBeenCalledWith('path-site', 'path-sid');
+      const json = await res.json();
+      expect(typeof json.data.format).toBe('string');
+    });
+
+    it('非路径路由仍保持 body > query，且 url 优先于 site/sid', async () => {
       const res = await app.request('/api/v2/info?format=bbcode', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url: 'https://movie.douban.com/subject/1292052/' }),
+        body: JSON.stringify({
+          url: 'https://movie.douban.com/subject/1292052/',
+          site: 'body-site',
+          sid: 'body-sid',
+        }),
       });
+      expect(res.status).toBe(200);
+      expect(mockOrchestrator.matchUrl).toHaveBeenCalledWith(
+        'https://movie.douban.com/subject/1292052/'
+      );
       const json = await res.json();
       expect(json.data.format).toBeDefined(); // format=bbcode 生效
     });
