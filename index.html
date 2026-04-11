@@ -135,8 +135,13 @@
             border: none;
             color: var(--text-sub);
             font-size: 1.2rem;
-            padding: 8px;
+            width: 40px;
+            height: 40px;
+            padding: 0;
             border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
             transition: background-color 0.2s ease, color 0.2s ease;
         }
 
@@ -161,7 +166,7 @@
         }
 
         .hero h1 {
-            font-size: clamp(1.8rem, 2.5vw, 2.4rem);
+            font-size: clamp(1.65rem, 2.1vw, 2.1rem);
             line-height: 1.15;
             text-wrap: balance;
         }
@@ -259,7 +264,21 @@
             padding: 12px;
         }
 
+        .field-feedback {
+            margin: -0.75rem 0 1rem;
+            color: #b91c1c;
+            font-size: 0.9rem;
+        }
+
+        [data-theme="dark"] .field-feedback {
+            color: #fca5a5;
+        }
+
         /* Result Area */
+        .result-area[aria-busy="true"] {
+            opacity: 0.72;
+        }
+
         .result-header {
             display: flex;
             justify-content: space-between;
@@ -617,7 +636,8 @@
                 <div class="search-bar">
                     <label class="sr-only" for="searchInput">资源链接或关键词</label>
                     <input type="text" id="searchInput" name="query" autocomplete="off" spellcheck="false"
-                        inputmode="search" placeholder="输入链接（https://…）或关键词（如：肖申克的救赎）">
+                        inputmode="search" aria-describedby="queryError"
+                        placeholder="输入链接（https://…）或关键词（如：肖申克的救赎）">
                 </div>
                 <button class="btn" id="queryBtn" type="button">
                     <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"
@@ -638,8 +658,9 @@
                     </svg>
                 </button>
             </div>
+            <p id="queryError" class="field-feedback hidden" role="alert"></p>
 
-            <div class="result-area">
+            <div class="result-area" id="resultArea" aria-busy="false">
                 <div class="result-header">
                     <div style="display:flex; align-items:center; gap:10px;">
                         <h2 class="result-title" id="resultTitle">生成结果</h2>
@@ -760,9 +781,11 @@
         const els = {
             searchInput: document.getElementById('searchInput'),
             sourceSelect: document.getElementById('sourceSelect'),
+            queryError: document.getElementById('queryError'),
             queryBtn: document.getElementById('queryBtn'),
             settingsBtn: document.getElementById('settingsBtn'),
             copyBtn: document.getElementById('copyBtn'),
+            resultArea: document.getElementById('resultArea'),
             resultOutput: document.getElementById('resultOutput'),
             resultStatus: document.getElementById('resultStatus'),
             textContainer: document.getElementById('textResultContainer'),
@@ -861,6 +884,18 @@
             });
         }
 
+        function clearQueryError() {
+            els.queryError.textContent = '';
+            els.queryError.classList.add('hidden');
+            els.searchInput.removeAttribute('aria-invalid');
+        }
+
+        function setQueryError(msg) {
+            els.queryError.textContent = msg;
+            els.queryError.classList.remove('hidden');
+            els.searchInput.setAttribute('aria-invalid', 'true');
+        }
+
         function showToast(msg) {
             if (toastTimer) {
                 window.clearTimeout(toastTimer);
@@ -892,6 +927,7 @@
         }
 
         function setLoading(isLoading) {
+            els.resultArea.setAttribute('aria-busy', String(isLoading));
             if (isLoading) {
                 els.queryBtn.disabled = true;
                 els.queryBtn.innerHTML = `<svg class="animate-spin" style="animation:spin 1s linear infinite; margin-right:5px" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="10" opacity="0.25"></circle><path d="M12 2a10 10 0 0 1 10 10" opacity="0.75"></path></svg> 查询中…`;
@@ -958,8 +994,11 @@
         }
 
         async function handleQuery(directUrl = null) {
+            clearQueryError();
             const inputVal = directUrl || els.searchInput.value.trim();
             if (!inputVal) {
+                setQueryError("请输入链接或关键词");
+                els.searchInput.focus();
                 showToast("请输入链接或关键词");
                 announceStatus("请输入链接或关键词");
                 return;
@@ -967,7 +1006,10 @@
 
             const isDirect = isDirectInput(inputVal);
             if (!isDirect && !searchEnabled) {
-                displayError("当前部署已禁用关键词搜索，请输入资源链接");
+                setQueryError("当前部署已禁用关键词搜索，请输入资源链接");
+                els.searchInput.focus();
+                showToast("当前部署已禁用关键词搜索，请输入资源链接");
+                announceStatus("当前部署已禁用关键词搜索，请输入资源链接");
                 return;
             }
 
@@ -1172,6 +1214,7 @@
         // Visual Tweak: Disable Source select if typing URL
         els.searchInput.addEventListener('input', (e) => {
             syncSourceSelectState(e.target.value);
+            clearQueryError();
         });
 
         els.modal.addEventListener('click', (e) => {
