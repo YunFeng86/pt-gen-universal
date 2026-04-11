@@ -9,23 +9,17 @@ import {
   SOURCE_FINGERPRINTS,
 } from '../../lib/constants/version';
 import { ApiV2SuccessResponse } from '../../lib/types/api_v2';
-import { BBCodeFormatter } from '../../lib/formatters/bbcode';
-import { MarkdownFormatter } from '../../lib/formatters/markdown';
 import { toAppError } from '../../lib/utils/app-error';
 import { CTX_CACHEABLE } from '../utils/context';
+import { MediaInfoService, type MediaInfoFormat } from '../services/media-info';
 import { extractRequestParams } from '../utils/request-params';
 
 export class V2Controller {
-  private bbcodeFormatter: BBCodeFormatter;
-  private markdownFormatter: MarkdownFormatter;
-
   constructor(
-    private orchestrator: Orchestrator,
-    private config: AppConfig
-  ) {
-    this.bbcodeFormatter = new BBCodeFormatter();
-    this.markdownFormatter = new MarkdownFormatter();
-  }
+    private readonly orchestrator: Orchestrator,
+    private readonly mediaInfoService: MediaInfoService,
+    private readonly config: AppConfig
+  ) {}
 
   async handleInfo(c: Context) {
     try {
@@ -33,40 +27,14 @@ export class V2Controller {
       const { url, site, sid, format } = await extractRequestParams(c);
 
       // 验证格式参数
-      const normalizedFormat = format.trim().toLowerCase();
+      const normalizedFormat = format.trim().toLowerCase() as MediaInfoFormat;
       const allowedFormats = new Set(['json', 'bbcode', 'markdown']);
       if (!allowedFormats.has(normalizedFormat)) {
         throw new AppError(ErrorCode.INVALID_PARAM, "Invalid 'format' parameter");
       }
 
-      // 验证必需参数
-      if (!url && (!site || !sid)) {
-        throw new AppError(ErrorCode.INVALID_PARAM, "Missing 'url' or 'site/sid' parameters");
-      }
-
-      // 解析 URL 或直接使用 site/sid
-      let finalSite = site;
-      let finalSid = sid;
-      if (url) {
-        const parsed = this.orchestrator.matchUrl(url);
-        finalSite = parsed.site;
-        finalSid = parsed.sid;
-      }
-
-      if (!finalSite || !finalSid) {
-        throw new AppError(ErrorCode.INVALID_PARAM, 'Could not resolve site/sid');
-      }
-
-      // 获取媒体信息
-      const info = await this.orchestrator.getMediaInfo(finalSite, finalSid);
-
-      // 生成格式化输出
-      let formatOutput: string | undefined;
-      if (normalizedFormat === 'bbcode') {
-        formatOutput = this.bbcodeFormatter.format(info);
-      } else if (normalizedFormat === 'markdown') {
-        formatOutput = this.markdownFormatter.format(info);
-      }
+      const { site: finalSite, info } = await this.mediaInfoService.resolve({ url, site, sid });
+      const formatOutput = this.mediaInfoService.renderFormat(info, normalizedFormat);
 
       const response: ApiV2SuccessResponse = {
         versions: {
@@ -125,9 +93,5 @@ export class V2Controller {
     } catch (e: any) {
       throw toAppError(e);
     }
-  }
-
-  private parseUrl(url: string): { site: string; sid: string } {
-    return this.orchestrator.matchUrl(url);
   }
 }

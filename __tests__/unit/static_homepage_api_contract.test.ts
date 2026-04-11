@@ -57,6 +57,18 @@ describe('static homepage api contract', () => {
     expect(html).toContain('接口返回了 HTML 页面');
   });
 
+  it('adds semantic labels and live regions for accessibility', () => {
+    expect(html).toContain('class="skip-link"');
+    expect(html).toContain('href="#main-content"');
+    expect(html).toContain('for="sourceSelect"');
+    expect(html).toContain('for="searchInput"');
+    expect(html).toContain('for="apiKeyInput"');
+    expect(html).toContain('aria-label="切换深色模式"');
+    expect(html).toContain('aria-live="polite"');
+    expect(html).toContain('role="dialog"');
+    expect(html).toContain('aria-modal="true"');
+  });
+
   it('renders search results without interpolating upstream html into innerHTML', () => {
     expect(html).not.toContain('${item.title}');
     expect(html).not.toContain('${item.subtitle ||');
@@ -68,6 +80,14 @@ describe('static homepage api contract', () => {
     expect(html).toContain('if (hasDisplayText(item.year))');
     expect(html).toContain('if (hasDisplayText(item.subtitle))');
     expect(html).toContain('if (hasDisplayText(item.subtype))');
+  });
+
+  it('uses accessible interactive semantics and motion-safe styles', () => {
+    expect(html).toContain("document.createElement('button')");
+    expect(html).toContain(':focus-visible');
+    expect(html).toContain('prefers-reduced-motion: reduce');
+    expect(html).not.toContain('outline: none');
+    expect(html).not.toContain('transition: all');
   });
 
   it('lists every searchable registry source on the homepage and keeps indienova as direct-link only', () => {

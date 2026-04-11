@@ -2,22 +2,16 @@ import { Context } from 'hono';
 import { Orchestrator } from '../../lib/orchestrator';
 import { AppConfig } from '../../lib/types/config';
 import { AUTHOR, VERSION } from '../../lib/const';
-import { BBCodeFormatter } from '../../lib/formatters/bbcode';
-import { MarkdownFormatter } from '../../lib/formatters/markdown';
 import debug_get_err from '../../lib/utils/error';
 import { CTX_CACHEABLE } from '../utils/context';
+import { MediaInfoService, type MediaLocator } from '../services/media-info';
 
 export class V1Controller {
-  private bbcodeFormatter: BBCodeFormatter;
-  private markdownFormatter: MarkdownFormatter;
-
   constructor(
-    private orchestrator: Orchestrator,
-    private config: AppConfig
-  ) {
-    this.bbcodeFormatter = new BBCodeFormatter();
-    this.markdownFormatter = new MarkdownFormatter();
-  }
+    private readonly orchestrator: Orchestrator,
+    private readonly mediaInfoService: MediaInfoService,
+    private readonly config: AppConfig
+  ) {}
 
   async handleSearch(c: Context) {
     if (this.config.disableSearch) {
@@ -60,7 +54,10 @@ export class V1Controller {
       // URL mode
       try {
         const { site: matchedSite, sid: matchedSid } = this.orchestrator.matchUrl(url);
-        return this.processInfo(c, matchedSite, matchedSid);
+        return this.processInfo(c, {
+          site: matchedSite,
+          sid: matchedSid,
+        });
       } catch (e: any) {
         // V1 returns 400 for unsupported URL
         return c.json({ error: 'Unsupported URL or input unsupported resource url' }, 400);
@@ -68,28 +65,23 @@ export class V1Controller {
     }
 
     if (site && sid) {
-      return this.processInfo(c, site, sid);
+      return this.processInfo(c, { site, sid });
     }
 
     return c.json({ error: 'Missing url or site/sid' }, 400);
   }
 
-  private async processInfo(c: Context, site: string, sid: string) {
+  private async processInfo(c: Context, locator: MediaLocator) {
     try {
-      const info = await this.orchestrator.getMediaInfo(site, sid);
-      const bbcode = this.bbcodeFormatter.format(info);
-      const markdown = this.markdownFormatter.format(info);
+      const { sid, info } = await this.mediaInfoService.resolve(locator);
+      const formats = this.mediaInfoService.renderFormats(info);
 
       const data = {
         sid: sid,
         success: true,
         ...info,
-        format: bbcode,
-        formats: {
-          bbcode: bbcode,
-          markdown: markdown,
-          json: JSON.stringify(info, null, 2),
-        },
+        format: formats.bbcode,
+        formats,
         link: info.link || ``,
       };
       c.set(CTX_CACHEABLE, true);

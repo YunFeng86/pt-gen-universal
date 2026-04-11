@@ -10,6 +10,7 @@
             --primary: #10b981;
             /* Modern Green */
             --primary-hover: #059669;
+            --focus-ring: rgba(16, 185, 129, 0.35);
             --bg-body: #f3f4f6;
             --bg-card: #ffffff;
             --text-main: #1f2937;
@@ -22,6 +23,7 @@
         }
 
         [data-theme="dark"] {
+            color-scheme: dark;
             --bg-body: #111827;
             --bg-card: #1f2937;
             --text-main: #f9fafb;
@@ -46,6 +48,59 @@
             flex-direction: column;
             min-height: 100vh;
             line-height: 1.5;
+        }
+
+        .sr-only {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border: 0;
+        }
+
+        .skip-link {
+            position: absolute;
+            top: 12px;
+            left: 12px;
+            z-index: 1000;
+            padding: 10px 14px;
+            border-radius: 10px;
+            background-color: var(--bg-card);
+            color: var(--text-main);
+            text-decoration: none;
+            box-shadow: var(--shadow);
+            transform: translateY(-160%);
+            transition: transform 0.2s ease;
+        }
+
+        .skip-link:focus-visible {
+            transform: translateY(0);
+        }
+
+        button,
+        a,
+        input,
+        select,
+        textarea {
+            -webkit-tap-highlight-color: rgba(16, 185, 129, 0.18);
+        }
+
+        button,
+        .search-item {
+            touch-action: manipulation;
+        }
+
+        a:focus-visible,
+        button:focus-visible,
+        input:focus-visible,
+        select:focus-visible,
+        textarea:focus-visible {
+            outline: 3px solid var(--focus-ring);
+            outline-offset: 2px;
         }
 
         /* Header */
@@ -82,6 +137,7 @@
             font-size: 1.2rem;
             padding: 8px;
             border-radius: 50%;
+            transition: background-color 0.2s ease, color 0.2s ease;
         }
 
         .theme-toggle:hover {
@@ -96,6 +152,23 @@
             max-width: 900px;
             margin: 2rem auto;
             padding: 0 1rem;
+        }
+
+        .hero {
+            display: grid;
+            gap: 0.75rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .hero h1 {
+            font-size: clamp(1.8rem, 2.5vw, 2.4rem);
+            line-height: 1.15;
+            text-wrap: balance;
+        }
+
+        .hero p {
+            color: var(--text-sub);
+            max-width: 62ch;
         }
 
         /* Card Style */
@@ -131,13 +204,15 @@
             border-radius: var(--radius);
             color: var(--text-main);
             font-size: 1rem;
-            outline: none;
+            outline: 2px solid transparent;
+            outline-offset: 2px;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
         }
 
-        input[type="text"]:focus,
-        select:focus {
+        input[type="text"]:focus-visible,
+        select:focus-visible {
             border-color: var(--primary);
-            box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+            box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.12);
         }
 
         /* Source Select inside Search Bar logic visually */
@@ -158,6 +233,7 @@
             align-items: center;
             gap: 8px;
             font-size: 1rem;
+            transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease, opacity 0.2s ease;
         }
 
         .btn:hover {
@@ -207,7 +283,14 @@
             font-family: 'Monaco', 'Consolas', monospace;
             font-size: 0.9rem;
             resize: vertical;
-            outline: none;
+            outline: 2px solid transparent;
+            outline-offset: 2px;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+        }
+
+        textarea:focus-visible {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.12);
         }
 
         /* Search Results List Mode */
@@ -226,15 +309,27 @@
             border: 1px solid var(--border);
             border-radius: 8px;
             cursor: pointer;
+            width: 100%;
+            appearance: none;
+            text-align: left;
+            color: inherit;
+            font: inherit;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
         }
 
         .search-item:hover {
             border-color: var(--primary);
         }
 
+        .search-item:focus-visible {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.12);
+        }
+
         .item-info {
             display: flex;
             flex-direction: column;
+            min-width: 0;
         }
 
         .item-title {
@@ -279,6 +374,7 @@
             font-size: 0.9rem;
             padding: 8px;
             border-radius: 6px;
+            transition: background-color 0.2s ease, color 0.2s ease;
         }
 
         .links-list li a:hover {
@@ -299,11 +395,12 @@
             width: 100%;
             height: 100%;
             background: rgba(0, 0, 0, 0.5);
-            display: none;
+            display: flex;
             justify-content: center;
             align-items: center;
             z-index: 200;
             backdrop-filter: blur(2px);
+            overscroll-behavior: contain;
         }
 
         .modal {
@@ -331,6 +428,10 @@
             display: none !important;
         }
 
+        [hidden] {
+            display: none !important;
+        }
+
         .loading {
             position: relative;
             opacity: 0.7;
@@ -353,6 +454,7 @@
             transform: translateX(-50%);
             font-size: 14px;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            pointer-events: none;
         }
 
         #toast.show {
@@ -422,7 +524,7 @@
             color: var(--text-sub);
             font-weight: 500;
             cursor: pointer;
-            transition: all 0.2s ease;
+            transition: color 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease;
         }
 
         .capsule-btn:hover {
@@ -434,23 +536,51 @@
             color: var(--primary);
             box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
         }
+
+        @media (max-width: 640px) {
+            header {
+                padding: 1rem 1.25rem;
+            }
+
+            .card {
+                padding: 1.5rem;
+            }
+
+            .result-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 0.75rem;
+            }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            *,
+            *::before,
+            *::after {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+                scroll-behavior: auto !important;
+            }
+        }
     </style>
 </head>
 
 <body>
+    <a class="skip-link" href="#main-content">跳到主要内容</a>
 
     <header>
         <div class="brand">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                stroke-linecap="round" stroke-linejoin="round">
+                stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
                 <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
                 <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
             </svg>
-            PT <span>Gen</span>
+            <span translate="no">PT <span>Gen</span></span>
         </div>
-        <button class="theme-toggle" id="themeToggle" title="切换模式">
+        <button class="theme-toggle" id="themeToggle" type="button" title="切换模式" aria-label="切换深色模式">
             <svg id="icon-sun" class="hidden" width="20" height="20" viewBox="0 0 24 24" fill="none"
-                stroke="currentColor" stroke-width="2">
+                stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false">
                 <circle cx="12" cy="12" r="5"></circle>
                 <line x1="12" y1="1" x2="12" y2="3"></line>
                 <line x1="12" y1="21" x2="12" y2="23"></line>
@@ -462,16 +592,21 @@
                 <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
             </svg>
             <svg id="icon-moon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                stroke-width="2">
+                stroke-width="2" aria-hidden="true" focusable="false">
                 <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
             </svg>
         </button>
     </header>
 
-    <main>
+    <main id="main-content" tabindex="-1">
         <div class="card">
+            <div class="hero">
+                <h1 id="pageTitle">PT Gen 资源信息生成工具</h1>
+                <p>输入资源链接或关键词，快速生成适合 PT 站发布页使用的简介文本与结构化结果。</p>
+            </div>
             <div class="input-group">
-                <select id="sourceSelect" class="source-select">
+                <label class="sr-only" for="sourceSelect">选择数据源</label>
+                <select id="sourceSelect" class="source-select" name="source">
                     <option value="douban">豆瓣 (Douban)</option>
                     <option value="imdb">IMDb</option>
                     <option value="bangumi">Bangumi</option>
@@ -480,17 +615,22 @@
                     <option value="gog">GOG</option>
                 </select>
                 <div class="search-bar">
-                    <input type="text" id="searchInput" placeholder="输入 链接 (http...) 或 关键词 (如: 肖申克的救赎)">
+                    <label class="sr-only" for="searchInput">资源链接或关键词</label>
+                    <input type="text" id="searchInput" name="query" autocomplete="off" spellcheck="false"
+                        inputmode="search" placeholder="输入链接（https://…）或关键词（如：肖申克的救赎）">
                 </div>
-                <button class="btn" id="queryBtn">
-                    <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <button class="btn" id="queryBtn" type="button">
+                    <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"
+                        aria-hidden="true" focusable="false">
                         <circle cx="11" cy="11" r="8"></circle>
                         <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
                     </svg>
                     查询
                 </button>
-                <button class="btn btn-secondary settings-btn" id="settingsBtn" title="API Key 设置">
-                    <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <button class="btn btn-secondary settings-btn" id="settingsBtn" type="button" title="API Key 设置"
+                    aria-label="打开 API Key 设置">
+                    <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"
+                        aria-hidden="true" focusable="false">
                         <circle cx="12" cy="12" r="3"></circle>
                         <path
                             d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z">
@@ -502,22 +642,24 @@
             <div class="result-area">
                 <div class="result-header">
                     <div style="display:flex; align-items:center; gap:10px;">
-                        <span class="result-title" id="resultTitle">生成结果</span>
+                        <h2 class="result-title" id="resultTitle">生成结果</h2>
                         <div class="capsule-group" id="formatGroup">
-                            <button class="capsule-btn active" data-format="bbcode">BBCode</button>
-                            <button class="capsule-btn" data-format="markdown">Markdown</button>
-                            <button class="capsule-btn" data-format="json">RAW JSON</button>
+                            <button class="capsule-btn active" type="button" data-format="bbcode">BBCode</button>
+                            <button class="capsule-btn" type="button" data-format="markdown">Markdown</button>
+                            <button class="capsule-btn" type="button" data-format="json">RAW JSON</button>
                         </div>
                     </div>
-                    <button class="btn btn-secondary" id="copyBtn"
+                    <button class="btn btn-secondary" id="copyBtn" type="button" aria-label="复制当前结果"
                         style="padding: 6px 12px; font-size: 0.9rem;">复制</button>
                 </div>
+                <p id="resultStatus" class="sr-only" aria-live="polite" aria-atomic="true"></p>
 
                 <div id="textResultContainer">
-                    <textarea id="resultOutput" placeholder="这里将显示生成的简介信息..." readonly></textarea>
+                    <textarea id="resultOutput" placeholder="这里将显示生成的简介信息…" readonly
+                        aria-label="生成结果输出"></textarea>
                 </div>
 
-                <div id="searchListContainer" class="search-list hidden">
+                <div id="searchListContainer" class="search-list hidden" aria-live="polite">
                 </div>
             </div>
         </div>
@@ -541,22 +683,22 @@
                             style="background: var(--input-bg); padding: 2px 6px; border-radius: 4px;">https://movie.douban.com/subject/...</code>
                     </li>
                     <li>IMDb: <code
-                            style="background: var(--input-bg); padding: 2px 6px; border-radius: 4px;">https://www.imdb.com/title/tt...</code>
+                            style="background: var(--input-bg); padding: 2px 6px; border-radius: 4px;">https://www.imdb.com/title/tt…</code>
                     </li>
                     <li>Bangumi: <code
-                            style="background: var(--input-bg); padding: 2px 6px; border-radius: 4px;">https://bgm.tv/subject/...</code>
+                            style="background: var(--input-bg); padding: 2px 6px; border-radius: 4px;">https://bgm.tv/subject/…</code>
                     </li>
                     <li>TMDB: <code
-                            style="background: var(--input-bg); padding: 2px 6px; border-radius: 4px;">https://www.themoviedb.org/...</code>
+                            style="background: var(--input-bg); padding: 2px 6px; border-radius: 4px;">https://www.themoviedb.org/…</code>
                     </li>
                     <li>Steam: <code
-                            style="background: var(--input-bg); padding: 2px 6px; border-radius: 4px;">https://store.steampowered.com/app/...</code>
+                            style="background: var(--input-bg); padding: 2px 6px; border-radius: 4px;">https://store.steampowered.com/app/…</code>
                     </li>
                     <li>GOG: <code
-                            style="background: var(--input-bg); padding: 2px 6px; border-radius: 4px;">https://www.gog.com/game/...</code>
+                            style="background: var(--input-bg); padding: 2px 6px; border-radius: 4px;">https://www.gog.com/game/…</code>
                     </li>
                     <li>Indienova: <code
-                            style="background: var(--input-bg); padding: 2px 6px; border-radius: 4px;">https://indienova.com/game/...</code>
+                            style="background: var(--input-bg); padding: 2px 6px; border-radius: 4px;">https://indienova.com/game/…</code>
                     </li>
                 </ul>
             </div>
@@ -568,21 +710,21 @@
             </div>
             <ul class="links-list">
                 <li>
-                    <a href="https://github.com/rabbitwit/PT-Gen-Refactor" target="_blank">
+                    <a href="https://github.com/rabbitwit/PT-Gen-Refactor" target="_blank" rel="noreferrer noopener">
                         <span>rabbitwit</span>/PT-Gen-Refactor
                         <div style="font-size: 0.8rem; color: var(--text-sub); margin-top: 4px;">PT 站资源信息生成工具重构版</div>
                     </a>
                 </li>
                 <li>
                     <a href="https://greasyfork.org/zh-CN/scripts/329484-%E8%B1%86%E7%93%A3%E8%B5%84%E6%BA%90%E4%B8%8B%E8%BD%BD%E5%A4%A7%E5%B8%88-1%E7%A7%92%E6%90%9E%E5%AE%9A%E8%B1%86%E7%93%A3%E7%94%B5%E5%BD%B1-%E9%9F%B3%E4%B9%90-%E5%9B%BE%E4%B9%A6%E4%B8%8B%E8%BD%BD"
-                        target="_blank">
+                        target="_blank" rel="noreferrer noopener">
                         豆瓣资源下载大师
                         <div style="font-size: 0.8rem; color: var(--text-sub); margin-top: 4px;">一键获取豆瓣电影、音乐、图书资源信息
                         </div>
                     </a>
                 </li>
                 <li>
-                    <a href="https://git.io/fjm3l" target="_blank">
+                    <a href="https://git.io/fjm3l" target="_blank" rel="noreferrer noopener">
                         Bangumi Info Export
                         <div style="font-size: 0.8rem; color: var(--text-sub); margin-top: 4px;">导出 Bangumi 番组信息的脚本
                         </div>
@@ -592,19 +734,24 @@
         </div>
     </main>
 
-    <div class="modal-overlay" id="apiKeyModal">
-        <div class="modal">
-            <h3>API 配置</h3>
-            <p style="color:var(--text-sub); font-size:0.9rem; margin-bottom:1rem;">请输入您的 API Key 以继续使用。</p>
-            <input type="text" id="apiKeyInput" placeholder="输入 API Key" style="margin-bottom: 5px;">
+    <div class="modal-overlay" id="apiKeyModal" hidden aria-hidden="true">
+        <div class="modal" role="dialog" aria-modal="true" aria-labelledby="apiKeyModalTitle"
+            aria-describedby="apiKeyModalDescription">
+            <h2 id="apiKeyModalTitle">API 配置</h2>
+            <p id="apiKeyModalDescription" style="color:var(--text-sub); font-size:0.9rem; margin-bottom:1rem;">
+                请输入您的 API Key 以继续使用。
+            </p>
+            <label class="sr-only" for="apiKeyInput">API Key</label>
+            <input type="text" id="apiKeyInput" name="apikey" autocomplete="off" spellcheck="false"
+                placeholder="输入 API Key" style="margin-bottom: 5px;">
             <div class="modal-actions">
-                <button class="btn btn-secondary" id="closeModalBtn">取消</button>
-                <button class="btn" id="saveApiKeyBtn">保存</button>
+                <button class="btn btn-secondary" id="closeModalBtn" type="button">取消</button>
+                <button class="btn" id="saveApiKeyBtn" type="button">保存</button>
             </div>
         </div>
     </div>
 
-    <div id="toast">Notification</div>
+    <div id="toast" role="status" aria-live="polite" aria-atomic="true">状态通知</div>
 
     <script id="ptgen-home-config" type="application/json">{"searchEnabled":true}</script>
 
@@ -617,6 +764,7 @@
             settingsBtn: document.getElementById('settingsBtn'),
             copyBtn: document.getElementById('copyBtn'),
             resultOutput: document.getElementById('resultOutput'),
+            resultStatus: document.getElementById('resultStatus'),
             textContainer: document.getElementById('textResultContainer'),
             listContainer: document.getElementById('searchListContainer'),
             modal: document.getElementById('apiKeyModal'),
@@ -627,7 +775,8 @@
             iconSun: document.getElementById('icon-sun'),
             iconMoon: document.getElementById('icon-moon'),
             resultTitle: document.getElementById('resultTitle'),
-            formatGroup: document.getElementById('formatGroup')
+            formatGroup: document.getElementById('formatGroup'),
+            toast: document.getElementById('toast')
         };
 
         const DEFAULT_HOME_CONFIG = Object.freeze({
@@ -668,6 +817,8 @@
         const searchEnabled = homeConfig.searchEnabled !== false;
         let apiKey = localStorage.getItem('APIKEY') || '';
         let savedFormat = localStorage.getItem('info_format') || 'bbcode';
+        let toastTimer = null;
+        let lastFocusedElement = null;
 
         // Init Format Selection
         document.querySelectorAll('.capsule-btn').forEach(btn => {
@@ -688,6 +839,7 @@
                 els.iconSun.classList.add('hidden');
                 els.iconMoon.classList.remove('hidden');
             }
+            els.themeToggle.setAttribute('aria-pressed', String(isDark));
             localStorage.setItem('theme', isDark ? 'dark' : 'light');
         }
 
@@ -702,25 +854,50 @@
         });
 
         // --- UI Helpers ---
+        function announceStatus(msg) {
+            els.resultStatus.textContent = '';
+            window.requestAnimationFrame(() => {
+                els.resultStatus.textContent = msg;
+            });
+        }
+
         function showToast(msg) {
-            const t = document.getElementById('toast');
-            t.innerText = msg;
-            t.className = 'show';
-            setTimeout(() => { t.className = t.className.replace('show', ''); }, 3000);
+            if (toastTimer) {
+                window.clearTimeout(toastTimer);
+            }
+            els.toast.textContent = msg;
+            els.toast.className = 'show';
+            toastTimer = window.setTimeout(() => {
+                els.toast.className = els.toast.className.replace('show', '').trim();
+            }, 3000);
         }
 
         function toggleModal(show) {
-            els.modal.style.display = show ? 'flex' : 'none';
-            if (show) els.apiKeyInput.value = apiKey;
+            if (show) {
+                lastFocusedElement = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+                els.modal.hidden = false;
+                els.modal.setAttribute('aria-hidden', 'false');
+                els.apiKeyInput.value = apiKey;
+                window.requestAnimationFrame(() => {
+                    els.apiKeyInput.focus();
+                });
+                return;
+            }
+
+            els.modal.hidden = true;
+            els.modal.setAttribute('aria-hidden', 'true');
+            if (lastFocusedElement && typeof lastFocusedElement.focus === 'function') {
+                lastFocusedElement.focus();
+            }
         }
 
         function setLoading(isLoading) {
             if (isLoading) {
                 els.queryBtn.disabled = true;
-                els.queryBtn.innerHTML = `<svg class="animate-spin" style="animation:spin 1s linear infinite; margin-right:5px" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10" opacity="0.25"></circle><path d="M12 2a10 10 0 0 1 10 10" opacity="0.75"></path></svg> 查询中...`;
+                els.queryBtn.innerHTML = `<svg class="animate-spin" style="animation:spin 1s linear infinite; margin-right:5px" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="10" opacity="0.25"></circle><path d="M12 2a10 10 0 0 1 10 10" opacity="0.75"></path></svg> 查询中…`;
             } else {
                 els.queryBtn.disabled = false;
-                els.queryBtn.innerHTML = `<svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg> 查询`;
+                els.queryBtn.innerHTML = `<svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg> 查询`;
             }
         }
 
@@ -728,6 +905,7 @@
             els.textContainer.classList.remove('hidden');
             els.listContainer.classList.add('hidden');
             els.resultOutput.value = `错误: ${msg}`;
+            announceStatus(`发生错误：${msg}`);
             showToast(msg);
         }
 
@@ -743,6 +921,7 @@
             const shouldDisable = !searchEnabled || isDirectInput(value);
             els.sourceSelect.disabled = shouldDisable;
             els.sourceSelect.style.opacity = shouldDisable ? 0.5 : 1;
+            els.sourceSelect.setAttribute('aria-disabled', String(shouldDisable));
             els.sourceSelect.title = !searchEnabled ? '当前部署已禁用关键词搜索' : '';
         }
 
@@ -782,6 +961,7 @@
             const inputVal = directUrl || els.searchInput.value.trim();
             if (!inputVal) {
                 showToast("请输入链接或关键词");
+                announceStatus("请输入链接或关键词");
                 return;
             }
 
@@ -852,6 +1032,7 @@
 
                     els.resultTitle.innerText = "生成结果";
                     els.copyBtn.style.display = 'inline-flex';
+                    announceStatus("已生成结果");
                 } else {
                     // Search Mode: Show List
                     renderSearchList(data.data);
@@ -878,6 +1059,7 @@
             // Update Text if data exists
             if (currentData && currentData.formats) {
                 els.resultOutput.value = currentData.formats[fmt] || currentData.format || '';
+                announceStatus(`已切换为 ${fmt.toUpperCase()} 格式`);
             }
         }
 
@@ -886,6 +1068,7 @@
             els.listContainer.classList.remove('hidden');
             els.copyBtn.style.display = 'none';
             els.resultTitle.innerText = `搜索结果 (${items.length})`;
+            announceStatus(`找到 ${items.length} 条搜索结果`);
 
             els.listContainer.innerHTML = '';
 
@@ -900,8 +1083,10 @@
             }
 
             items.forEach(item => {
-                const div = document.createElement('div');
+                const div = document.createElement('button');
+                div.type = 'button';
                 div.className = 'search-item';
+                div.setAttribute('aria-label', `选择 ${hasDisplayText(item.title) ? item.title.trim() : '未命名结果'}`);
 
                 const info = document.createElement('div');
                 info.className = 'item-info';
@@ -951,8 +1136,11 @@
 
         els.queryBtn.addEventListener('click', () => handleQuery());
 
-        els.searchInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') handleQuery();
+        els.searchInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                handleQuery();
+            }
         });
 
         els.settingsBtn.addEventListener('click', () => toggleModal(true));
@@ -964,23 +1152,38 @@
             localStorage.setItem('APIKEY', apiKey);
             toggleModal(false);
             showToast("API Key 已保存");
+            announceStatus("API Key 已保存");
         });
 
         els.copyBtn.addEventListener('click', async () => {
             try {
                 await navigator.clipboard.writeText(els.resultOutput.value);
                 showToast("已复制到剪贴板");
+                announceStatus("已复制到剪贴板");
             } catch {
                 // Fallback for old browsers
                 els.resultOutput.select();
                 document.execCommand('copy');
                 showToast("已复制到剪贴板");
+                announceStatus("已复制到剪贴板");
             }
         });
 
         // Visual Tweak: Disable Source select if typing URL
         els.searchInput.addEventListener('input', (e) => {
             syncSourceSelectState(e.target.value);
+        });
+
+        els.modal.addEventListener('click', (e) => {
+            if (e.target === els.modal) {
+                toggleModal(false);
+            }
+        });
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && !els.modal.hidden) {
+                toggleModal(false);
+            }
         });
 
     </script>

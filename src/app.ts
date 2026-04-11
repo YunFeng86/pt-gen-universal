@@ -9,6 +9,7 @@ import { DEFAULT_SITE_PLUGINS } from './registry';
 import { CTX_CACHEABLE } from './utils/context';
 import { CacheManager } from './cache/cache-manager';
 import { createRateLimitMiddleware } from './middleware/rate-limit';
+import { MediaInfoService } from './services/media-info';
 import type { Storage } from './storage/storage';
 
 export type { Storage } from './storage/storage';
@@ -237,8 +238,9 @@ export function createApp(storage: Storage, config: AppConfig = {}) {
 
   // 初始化 Orchestrator 和 Controllers
   const orchestrator = new Orchestrator(config, DEFAULT_SITE_PLUGINS);
-  const v1 = new V1Controller(orchestrator, config);
-  const v2 = new V2Controller(orchestrator, config);
+  const mediaInfoService = new MediaInfoService(orchestrator);
+  const v1 = new V1Controller(orchestrator, mediaInfoService, config);
+  const v2 = new V2Controller(orchestrator, mediaInfoService, config);
 
   // HTML must be provided by the runtime adapter (Node/Bun/CF).
   const htmlPage = config.htmlPage || '';

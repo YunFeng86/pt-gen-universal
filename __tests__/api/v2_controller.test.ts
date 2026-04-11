@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { Hono } from 'hono';
 import { V2Controller } from '../../src/controllers/v2';
 import { AppError, ErrorCode } from '../../lib/errors';
+import type { MediaInfoService } from '../../src/services/media-info';
 
 function makeTestApp(v2: V2Controller) {
   const app = new Hono();
@@ -54,14 +55,36 @@ describe('API v2 controller contract', () => {
     introduction: 'test intro',
   };
 
-  it('supports query site/sid (previously broken) and defaults format=json', async () => {
-    const v2 = new V2Controller(
+  function createController({
+    config = {},
+    search = async () => [],
+    resolve = async ({ site = 'douban', sid = '1292052' } = {}) => ({
+      site,
+      sid,
+      info: fakeInfo,
+    }),
+    renderFormat = (_info: unknown, format: 'json' | 'bbcode' | 'markdown') =>
+      format === 'markdown' ? '## 基本信息' : format === 'bbcode' ? '◎译　　名' : undefined,
+  }: {
+    config?: Record<string, unknown>;
+    search?: (sourceName: string, query: string) => Promise<unknown[]>;
+    resolve?: MediaInfoService['resolve'];
+    renderFormat?: MediaInfoService['renderFormat'];
+  }) {
+    return new V2Controller(
       {
-        getMediaInfo: async () => fakeInfo,
-        search: async () => [],
+        search,
       } as any,
-      {}
+      {
+        resolve,
+        renderFormat,
+      } as any,
+      config as any
     );
+  }
+
+  it('supports query site/sid (previously broken) and defaults format=json', async () => {
+    const v2 = createController({});
     const app = makeTestApp(v2);
 
     const res = await app.request('http://localhost/api/v2/info?site=douban&sid=1292052');
@@ -73,13 +96,7 @@ describe('API v2 controller contract', () => {
   });
 
   it('reads format from query (bbcode) and includes formatted output', async () => {
-    const v2 = new V2Controller(
-      {
-        getMediaInfo: async () => fakeInfo,
-        search: async () => [],
-      } as any,
-      {}
-    );
+    const v2 = createController({});
     const app = makeTestApp(v2);
 
     const res = await app.request(
@@ -92,13 +109,7 @@ describe('API v2 controller contract', () => {
   });
 
   it('allows POST /info with only query params and empty body', async () => {
-    const v2 = new V2Controller(
-      {
-        getMediaInfo: async () => fakeInfo,
-        search: async () => [],
-      } as any,
-      {}
-    );
+    const v2 = createController({});
     const app = makeTestApp(v2);
 
     const res = await app.request('http://localhost/api/v2/info?site=douban&sid=1292052', {
@@ -110,13 +121,7 @@ describe('API v2 controller contract', () => {
   });
 
   it('reads format from query for RESTful path routes', async () => {
-    const v2 = new V2Controller(
-      {
-        getMediaInfo: async () => fakeInfo,
-        search: async () => [],
-      } as any,
-      {}
-    );
+    const v2 = createController({});
     const app = makeTestApp(v2);
 
     const res = await app.request('http://localhost/api/v2/info/douban/1292052?format=markdown');
@@ -127,13 +132,7 @@ describe('API v2 controller contract', () => {
   });
 
   it('rejects invalid format with INVALID_PARAM (400)', async () => {
-    const v2 = new V2Controller(
-      {
-        getMediaInfo: async () => fakeInfo,
-        search: async () => [],
-      } as any,
-      {}
-    );
+    const v2 = createController({});
     const app = makeTestApp(v2);
 
     const res = await app.request(
@@ -145,13 +144,7 @@ describe('API v2 controller contract', () => {
   });
 
   it('enforces disableSearch in v2', async () => {
-    const v2 = new V2Controller(
-      {
-        getMediaInfo: async () => fakeInfo,
-        search: async () => [],
-      } as any,
-      { disableSearch: true }
-    );
+    const v2 = createController({ config: { disableSearch: true } });
     const app = makeTestApp(v2);
 
     const res = await app.request('http://localhost/api/v2/search?q=test&source=douban');
@@ -161,18 +154,11 @@ describe('API v2 controller contract', () => {
   });
 
   it('returns FEATURE_DISABLED (403) when a site does not support search', async () => {
-    const v2 = new V2Controller(
-      {
-        getMediaInfo: async () => fakeInfo,
-        search: async () => {
-          throw new AppError(
-            ErrorCode.FEATURE_DISABLED,
-            'search not supported for site: indienova'
-          );
-        },
-      } as any,
-      {}
-    );
+    const v2 = createController({
+      search: async () => {
+        throw new AppError(ErrorCode.FEATURE_DISABLED, 'search not supported for site: indienova');
+      },
+    });
     const app = makeTestApp(v2);
 
     const res = await app.request('http://localhost/api/v2/search?q=test&source=indienova');
@@ -182,15 +168,11 @@ describe('API v2 controller contract', () => {
   });
 
   it('maps unknown sources as INVALID_PARAM (400) instead of 500', async () => {
-    const v2 = new V2Controller(
-      {
-        getMediaInfo: async () => {
-          throw new Error('Scraper not found: unknown');
-        },
-        search: async () => [],
-      } as any,
-      {}
-    );
+    const v2 = createController({
+      resolve: async () => {
+        throw new Error('Scraper not found: unknown');
+      },
+    });
     const app = makeTestApp(v2);
 
     const res = await app.request('http://localhost/api/v2/info?site=unknown&sid=1');

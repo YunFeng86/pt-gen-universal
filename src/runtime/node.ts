@@ -1,13 +1,13 @@
-import { createApp } from '../app';
 import { MemoryStorage } from '../storage/memory';
 import { RedisStorage } from '../storage/redis';
 import { VercelRedisStorage } from '../storage/vercel-redis';
 import type { Storage } from '../storage/storage';
 import { parseNumberEnv } from '../utils/env';
-import { createRuntimeSetup, type RuntimePlatform } from './env';
+import { type RuntimePlatform } from './env';
+import { createRuntimeApp } from './runtime-factory';
 
 export interface NodeRuntimeResult {
-  app: ReturnType<typeof createApp>;
+  app: Awaited<ReturnType<typeof createRuntimeApp>>['app'];
   port: number;
 }
 
@@ -48,11 +48,17 @@ export async function createNodeRuntime(
   platform: Extract<RuntimePlatform, 'node' | 'bun'>,
   env: Record<string, unknown>
 ): Promise<NodeRuntimeResult> {
-  const setup = createRuntimeSetup({ platform, env });
-  const storage = await resolveNodeStorage(platform, setup.values, setup.storageProvider);
+  const { app, setup } = await createRuntimeApp({
+    platform,
+    env,
+    createStorage: async (runtimeSetup) =>
+      await resolveNodeStorage(platform, runtimeSetup.values, runtimeSetup.storageProvider),
+    createFallbackStorage: (runtimeSetup) => createMemoryStorage(runtimeSetup.values),
+    fallbackMessage: `[ptgen] Failed to initialize runtime storage for ${platform}, falling back to memory.`,
+  });
 
   return {
-    app: createApp(storage, setup.appConfig),
+    app,
     port: setup.port,
   };
 }
