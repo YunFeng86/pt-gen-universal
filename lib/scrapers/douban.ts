@@ -6,6 +6,7 @@ import { normalizeCookie, mergeCookies } from '../utils/string';
 import { fetchWithTimeout } from '../utils/fetch';
 import { rateLimiter } from '../utils/rate-limiter';
 import { pageParser } from '../utils/html';
+import { safeJsonParse } from '../utils/json';
 import { NONE_EXIST_ERROR } from '../utils/error';
 
 const DEFAULT_TIMEOUT_MS = 10_000;
@@ -67,6 +68,19 @@ export class DoubanScraper implements Scraper {
       html: html,
       douban_link: doubanLink,
     };
+
+    // The mobile page renders the crew list via JS, so enrich with the rexxar API.
+    // Directors / writers / actors / languages / episodes may be missing from raw HTML.
+    try {
+      const rexxar = await this.fetchRexxarApi(id, config, headers, timeoutMs);
+      proxy_used = proxy_used || rexxar.proxyUsed;
+      data.proxy_used = proxy_used;
+      if (rexxar.data) {
+        data.rexxar_data = rexxar.data;
+      }
+    } catch {
+      // ignore
+    }
 
     // Awards and IMDb are enriched in Normalizer or here?
     // Usually scraper just gets raw data.
@@ -272,6 +286,46 @@ export class DoubanScraper implements Scraper {
     if (/检测到有异常请求|异常请求/.test(bodyText || '')) return true;
     if (/请开启JavaScript|captcha|验证码/.test(bodyText || '')) return true;
     return false;
+  }
+
+  private async fetchRexxarApi(
+    sid: string,
+    config: AppConfig,
+    headers: Record<string, string>,
+    timeoutMs: number
+  ): Promise<{ data: any | null; proxyUsed: boolean }> {
+    if (config.doubanIncludeRexxar === false) return { data: null, proxyUsed: false };
+
+    const endpoints = [
+      `https://m.douban.com/rexxar/api/v2/movie/${sid}?ck=&for_mobile=1`,
+      `https://m.douban.com/rexxar/api/v2/tv/${sid}?ck=&for_mobile=1`,
+    ];
+
+    for (const url of endpoints) {
+      try {
+        await rateLimiter.acquire('douban', 2000);
+        const apiHeaders = {
+          ...headers,
+          Accept: 'application/json, text/plain, */*',
+          Referer: `https://m.douban.com/movie/subject/${sid}/`,
+        };
+        const { response: resp, proxyUsed } = await fetchWithTimeout(
+          url,
+          { headers: apiHeaders },
+          timeoutMs,
+          config
+        );
+        if (!resp.ok) continue;
+        const raw = await resp.text();
+        if (this.looksLikeSecChallenge(resp, raw)) continue;
+        const json = safeJsonParse(raw);
+        if (json) return { data: json, proxyUsed };
+      } catch {
+        continue;
+      }
+    }
+
+    return { data: null, proxyUsed: false };
   }
 
   private async fetchAwards(

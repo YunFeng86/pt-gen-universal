@@ -5,7 +5,6 @@ import { MediaInfo } from '../types/schema';
 import { pageParser } from '../utils/html';
 import { safeJsonParse } from '../utils/json';
 import { ensureArray } from '../utils/array';
-import { normalizeMaybeArray, normalizePeople, fetchAnchorText } from '../utils/string';
 import { sortPlaydates } from '../utils/date';
 
 const DOUBAN_GENRES = new Set([
@@ -51,7 +50,12 @@ export class DoubanNormalizer implements Normalizer {
       throw new Error('DoubanRawData missing html content');
     }
 
-    const info = this.parseSubjectHtml(data.html, data.sid, data.douban_link || '');
+    const info = this.parseSubjectHtml(
+      data.html,
+      data.sid,
+      data.douban_link || '',
+      data.rexxar_data
+    );
 
     // Enrich with extra data if available in RawData
     if (data.awards_html) {
@@ -83,13 +87,13 @@ export class DoubanNormalizer implements Normalizer {
     return info;
   }
 
-  private parseSubjectHtml(html: string, sid: string, link: string): MediaInfo {
+  private parseSubjectHtml(html: string, sid: string, link: string, rexxarData?: any): MediaInfo {
     const $ = pageParser(html);
 
     // Check if mobile or desktop based on structure
     // m.douban.com pages often do not ship JSON-LD; they are still parseable.
     if ($('.subject-header-wrap').length > 0 || $('.sub-title').length > 0) {
-      return this.parseMobileSubjectHtml($, sid, link);
+      return this.parseMobileSubjectHtml($, sid, link, rexxarData);
     }
 
     // Desktop
@@ -127,84 +131,15 @@ export class DoubanNormalizer implements Normalizer {
     };
 
     if (!ldJson) {
-      // Fallback or error? Legacy code returned error.
-      // For robustness, we might want to throw or return partial.
-      // Legacy: "Douban page parse failed (JSON-LD not found)"
-      // Let's assume desktop pages always have JSON-LD or we fail.
-      // Actually, let's try to scrape what we can if JSON-LD is missing,
-      // but for now stick to legacy logic which relies heavily on it.
-      throw new Error('Douban page parse failed (JSON-LD not found)');
+      const infoRows = this.parseInfoRows($);
+      this.applyInfoRows(info, infoRows, $, title);
+      this.applyIntroAndTags(info, $);
+      return info;
     }
 
-    // IMDb
-    const imdbAnchor = $('#info span.pl:contains("IMDb")');
-    if (imdbAnchor.length > 0) {
-      const imdbId = fetchAnchorText(imdbAnchor);
-      if (imdbId) {
-        info.imdb_id = imdbId;
-        info.imdb_link = `https://www.imdb.com/title/${imdbId}/`;
-      }
-    }
+    const infoRows = this.parseInfoRows($);
 
-    const chineseTitle = title;
-    const foreignTitle = $('span[property="v:itemreviewed"]')
-      .text()
-      .replace(chineseTitle, '')
-      .trim();
-
-    const akaAnchor = $('#info span.pl:contains("又名")');
-    const akaRaw = fetchAnchorText(akaAnchor);
-    const aka = akaRaw
-      ? akaRaw
-          .split(' / ')
-          .map((x) => x.trim())
-          .filter(Boolean)
-          .sort()
-      : [];
-
-    this.setTitles(info, {
-      chinese_title: chineseTitle,
-      foreign_title: foreignTitle,
-      aka: aka.join('/'),
-    });
-
-    const yearRaw = $('#content > h1 > span.year').text();
-    info.year = yearRaw ? ' ' + yearRaw.substr(1, 4) : '';
-
-    const regionsAnchor = $('#info span.pl:contains("制片国家/地区")');
-    const regionRaw = regionsAnchor[0] ? fetchAnchorText(regionsAnchor) : '';
-    info.region = regionRaw ? regionRaw.split(' / ') : [];
-
-    info.genre = $('#info span[property="v:genre"]')
-      .map((_, el) => $(el).text().trim())
-      .toArray() as string[];
-
-    const languageAnchor = $('#info span.pl:contains("语言")');
-    const languageRaw = languageAnchor[0] ? fetchAnchorText(languageAnchor) : '';
-    info.language = languageRaw ? languageRaw.split(' / ') : [];
-
-    info.playdate = sortPlaydates(
-      $('#info span[property="v:initialReleaseDate"]')
-        .map((_, el) => $(el).text().trim())
-        .toArray() as string[]
-    );
-
-    const episodesAnchor = $('#info span.pl:contains("集数")');
-    info.episodes = episodesAnchor[0] ? fetchAnchorText(episodesAnchor) : '';
-
-    const durationAnchor = $('#info span.pl:contains("单集片长")');
-    info.duration = durationAnchor[0]
-      ? fetchAnchorText(durationAnchor)
-      : $('#info span[property="v:runtime"]').text().trim();
-
-    const introNode = $(
-      '#link-report-intra > span.all.hidden, #link-report-intra > [property="v:summary"], #link-report > span.all.hidden, #link-report > [property="v:summary"]'
-    );
-    info.introduction = (introNode.length > 0 ? introNode.text() : '暂无相关剧情介绍')
-      .split('\n')
-      .map((a) => a.trim())
-      .filter((a) => a.length > 0)
-      .join('\n');
+    this.applyInfoRows(info, infoRows, $, title);
 
     const doubanRating = ldJson['aggregateRating']?.['ratingValue'] || 0;
     const doubanVotes = ldJson['aggregateRating']?.['ratingCount'] || 0;
@@ -228,19 +163,232 @@ export class DoubanNormalizer implements Normalizer {
         .replace('img3', 'img1');
     }
 
-    info.director = ensureArray(ldJson['director']).map((x: any) => x.name || x);
-    info.writer = ensureArray(ldJson['author']).map((x: any) => x.name || x);
-    info.cast = ensureArray(ldJson['actor']).map((x: any) => x.name || x);
+    const ldDirector = ensureArray(ldJson['director']).map((x: any) => x.name || x);
+    const ldWriter = ensureArray(ldJson['author']).map((x: any) => x.name || x);
+    const ldCast = ensureArray(ldJson['actor']).map((x: any) => x.name || x);
+
+    info.director = this.rowLinks(infoRows, '导演', ldDirector);
+    info.writer = this.rowLinks(infoRows, '编剧', ldWriter);
+    info.cast = this.rowLinks(infoRows, '主演', ldCast);
+
+    this.applyIntroAndTags(info, $);
+
+    return info;
+  }
+
+  private rowLinks(
+    rows: Record<string, { links: string[]; text: string }>,
+    label: string,
+    fallback: string[]
+  ): string[] {
+    const row = rows[label];
+    if (!row) return fallback;
+    if (row.links.length) return row.links;
+    if (row.text) {
+      return row.text
+        .split(' / ')
+        .map((x) => x.trim())
+        .filter(Boolean);
+    }
+    return fallback;
+  }
+
+  private parseInfoRows(
+    $: ReturnType<typeof pageParser>
+  ): Record<string, { links: string[]; text: string }> {
+    const rows: Record<string, { links: string[]; text: string }> = {};
+
+    const infoHtml = $('#info').html() || '';
+    const lines = infoHtml.split(/<br\s*\/?>/i);
+
+    for (const line of lines) {
+      if (!line.trim()) continue;
+      const $line = $('<div></div>').html(line);
+      const $pl = $line.find('span.pl').first();
+      if (!$pl.length) continue;
+      const label = $pl
+        .text()
+        .replace(/[:：]\s*$/, '')
+        .trim();
+      if (!label) continue;
+
+      const links = $line
+        .find('a')
+        .map((_, a: any) => $(a).text().trim())
+        .get()
+        .filter(Boolean);
+
+      if (links.length) {
+        rows[label] = { links, text: '' };
+        continue;
+      }
+
+      const rawText = $line.text().replace($pl.text(), '').trim();
+      rows[label] = { links: [], text: rawText.replace(/^[:：]\s*/, '') };
+    }
+
+    return rows;
+  }
+
+  private applyInfoRows(
+    info: MediaInfo,
+    rows: Record<string, { links: string[]; text: string }>,
+    $: ReturnType<typeof pageParser>,
+    title: string
+  ): void {
+    // IMDb
+    const imdbRow = rows['IMDb'];
+    const imdbId = imdbRow?.links[0] || imdbRow?.text || '';
+    if (imdbId) {
+      info.imdb_id = imdbId;
+      info.imdb_link = `https://www.imdb.com/title/${imdbId}/`;
+    }
+
+    const chineseTitle = title;
+    const foreignTitle = $('span[property="v:itemreviewed"]')
+      .text()
+      .replace(chineseTitle, '')
+      .trim();
+
+    const akaRow = rows['又名'];
+    const akaRaw = akaRow?.links.length ? akaRow.links.join(' / ') : akaRow?.text || '';
+    const aka = akaRaw
+      ? akaRaw
+          .split(' / ')
+          .map((x) => x.trim())
+          .filter(Boolean)
+          .sort()
+      : [];
+
+    this.setTitles(info, {
+      chinese_title: chineseTitle,
+      foreign_title: foreignTitle,
+      aka: aka.join('/'),
+    });
+
+    const yearRaw = $('#content > h1 > span.year').text();
+    info.year = yearRaw ? ' ' + yearRaw.substr(1, 4) : '';
+
+    const regionRaw = rows['制片国家/地区']?.links.length
+      ? rows['制片国家/地区'].links.join(' / ')
+      : rows['制片国家/地区']?.text || '';
+    info.region = regionRaw ? regionRaw.split(' / ') : [];
+
+    info.genre = $('#info span[property="v:genre"]')
+      .map((_, el) => $(el).text().trim())
+      .toArray() as string[];
+
+    const languageRaw = rows['语言']?.links.length
+      ? rows['语言'].links.join(' / ')
+      : rows['语言']?.text || '';
+    info.language = languageRaw ? languageRaw.split(' / ') : [];
+
+    info.playdate = sortPlaydates(
+      $('#info span[property="v:initialReleaseDate"]')
+        .map((_, el) => $(el).text().trim())
+        .toArray() as string[]
+    );
+
+    info.episodes = rows['集数']?.links[0] || rows['集数']?.text || '';
+    info.seasons = rows['季数']?.links[0] || rows['季数']?.text || '';
+
+    const singleEpDuration = rows['单集片长']?.links[0] || rows['单集片长']?.text || '';
+    info.duration =
+      singleEpDuration ||
+      rows['片长']?.links[0] ||
+      rows['片长']?.text ||
+      $('#info span[property="v:runtime"]').text().trim();
+
+    info.director = this.rowLinks(rows, '导演', info.director);
+    info.writer = this.rowLinks(rows, '编剧', info.writer);
+    info.cast = this.rowLinks(rows, '主演', info.cast);
+  }
+
+  private applyIntroAndTags(info: MediaInfo, $: ReturnType<typeof pageParser>): void {
+    const introNode = $(
+      '#link-report-intra > span.all.hidden, #link-report-intra > [property="v:summary"], #link-report > span.all.hidden, #link-report > [property="v:summary"]'
+    );
+    info.introduction = (introNode.length > 0 ? introNode.text() : '暂无相关剧情介绍')
+      .split('\n')
+      .map((a) => a.trim())
+      .filter((a) => a.length > 0)
+      .join('\n');
 
     const tagNodes = $('div.tags-body > a[href^="/tag"]');
     if (tagNodes.length > 0) {
       info.tags = tagNodes.map((_, el) => $(el).text()).get() as string[];
     }
-
-    return info;
   }
 
-  private parseMobileSubjectHtml($: any, sid: string, link: string): MediaInfo {
+  private applyRexxarData(info: MediaInfo, data: any): void {
+    const name = (p: any) => String(p?.name || '').trim();
+
+    const directors = ensureArray(data.directors).map(name).filter(Boolean);
+    if (directors.length) info.director = directors;
+
+    const actors = ensureArray(data.actors).map(name).filter(Boolean);
+    if (actors.length) info.cast = actors;
+
+    const languages = ensureArray(data.languages).map(String).filter(Boolean);
+    if (languages.length) info.language = languages;
+
+    const countries = ensureArray(data.countries).map(String).filter(Boolean);
+    if (countries.length) info.region = countries;
+
+    const genres = ensureArray(data.genres).map(String).filter(Boolean);
+    if (genres.length) info.genre = genres;
+
+    const durations = ensureArray(data.durations).map(String).filter(Boolean);
+    if (durations.length && !info.duration) info.duration = durations[0];
+
+    const pubdates = ensureArray(data.pubdate).map(String).filter(Boolean);
+    if (pubdates.length) info.playdate = sortPlaydates(pubdates);
+
+    if (!info.episodes && data.episodes_count) {
+      info.episodes = String(data.episodes_count);
+    }
+
+    const aka = ensureArray(data.aka).map(String).filter(Boolean);
+    if (aka.length && !info.aka.length) {
+      info.aka = aka;
+      this.setTitles(info, {
+        chinese_title: info.chinese_title,
+        foreign_title: info.foreign_title,
+        aka: aka.join('/'),
+      });
+    }
+
+    const rating = data.rating;
+    if (rating && !info.douban_rating_average) {
+      info.douban_rating_average = Number(rating.value) || 0;
+      info.douban_votes = Number(rating.count) || 0;
+      if (info.douban_rating_average && info.douban_votes) {
+        info.douban_rating = `${info.douban_rating_average}/10 from ${info.douban_votes} users`;
+        info.ratings = {
+          douban: {
+            average: info.douban_rating_average,
+            votes: info.douban_votes,
+            formatted: info.douban_rating,
+            link: info.douban_link || '',
+          },
+        };
+      }
+    }
+
+    if (!info.poster && data.pic) {
+      const pic = data.pic;
+      if (pic.normal || pic.large || pic.original) {
+        info.poster = String(pic.large || pic.normal || pic.original || '');
+      } else if (data.cover_url) {
+        info.poster = String(data.cover_url);
+      }
+    }
+
+    const year = String(data.year || '').trim();
+    if (year && !info.year.trim()) info.year = ` ${year}`;
+  }
+
+  private parseMobileSubjectHtml($: any, sid: string, link: string, rexxarData?: any): MediaInfo {
     const info: MediaInfo = {
       site: 'douban',
       id: sid,
@@ -327,6 +475,26 @@ export class DoubanNormalizer implements Normalizer {
     }
 
     info.playdate = sortPlaydates(info.playdate);
+
+    // Enrich with the rexxar API data (crew is rendered via JS on mobile pages).
+    if (rexxarData && typeof rexxarData === 'object') {
+      this.applyRexxarData(info, rexxarData);
+    }
+
+    // Some mobile pages still carry a desktop-style #info block with director/cast/episodes.
+    if ($('#info').length > 0) {
+      const infoRows = this.parseInfoRows($);
+      if (!info.director.length) info.director = this.rowLinks(infoRows, '导演', []);
+      if (!info.writer.length) info.writer = this.rowLinks(infoRows, '编剧', []);
+      if (!info.cast.length) info.cast = this.rowLinks(infoRows, '主演', []);
+      if (!info.episodes)
+        info.episodes = infoRows['集数']?.links[0] || infoRows['集数']?.text || '';
+      if (!info.seasons) info.seasons = infoRows['季数']?.links[0] || infoRows['季数']?.text || '';
+      if (!info.duration) {
+        const singleEp = infoRows['单集片长']?.links[0] || infoRows['单集片长']?.text || '';
+        info.duration = singleEp || infoRows['片长']?.links[0] || infoRows['片长']?.text || '';
+      }
+    }
 
     const introP = $('section.subject-intro .bd p').first();
     if (introP.length > 0) {
