@@ -183,6 +183,7 @@ pnpm dlx wrangler secret put INDIENOVA_COOKIE
 | `TMDB_API_KEY` | TMDB API 密钥 |
 | `DOUBAN_COOKIE` | 豆瓣 Cookie |
 | `DOUBAN_INCLUDE_REXXAR` | 是否调用豆瓣 rexxar API 补充演职员等字段，默认启用 |
+| `IMAGE_CDN_PREFIX` | 海报加速前缀；设置后在所有海报链接前拼接该前缀（不编码），未设置则保持原始链接不变，示例：`https://dbimgs.audiences.me/?` |
 | `INDIENOVA_COOKIE` | Indienova Cookie |
 | `DISABLE_SEARCH` | 是否禁用搜索 |
 | `CACHE_TTL` | 缓存 TTL，单位秒 |
