@@ -7,7 +7,7 @@ compatibility_date = "2025-05-04"
 kv_namespaces = [
   # Replace with your real KV namespace id.
   # This placeholder is intentionally a valid-looking id so `wrangler build` doesn't fail fast.
-  { binding = "PT_GEN_STORE", id = "00000000000000000000000000000000" }
+  { binding = "PT_GEN_STORE", id = "b709d093eba64fbf93b1ddc31ab09a0a" }
 ]
 
 # 环境变量（可选）

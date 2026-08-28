@@ -80,6 +80,9 @@ export class V1Controller {
         sid: sid,
         success: true,
         ...info,
+        director: this.toNameObjects(info.director),
+        writer: this.toNameObjects(info.writer),
+        cast: this.toNameObjects(info.cast),
         format: formats.bbcode,
         formats,
         link: info.link || ``,
@@ -89,6 +92,11 @@ export class V1Controller {
     } catch (e: any) {
       return this.handleError(c, e);
     }
+  }
+
+  private toNameObjects(names: string[] | undefined): { name: string }[] | undefined {
+    if (!names) return names;
+    return names.map((n) => ({ name: n }));
   }
 
   private handleError(c: Context, e: any) {

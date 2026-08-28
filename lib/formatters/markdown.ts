@@ -3,6 +3,16 @@ import { MediaExtras, MediaInfo } from '../types/schema';
 import { normalizeMaybeArray, normalizePeople } from '../utils/string';
 import { ensureArray } from '../utils/array';
 
+// ---------- 辅助函数：根据环境变量决定是否添加加速前缀（不编码） ----------
+function getPosterUrl(originalPoster: unknown): string {
+  const poster = String(originalPoster || '');
+  if (!poster) return '';
+  const prefix = process.env.IMAGE_CDN_PREFIX;
+  // 如果设置了前缀，直接拼接（不编码）；否则返回原链接
+  return prefix ? prefix + poster : poster;
+}
+// --------------------------------------------------------------------
+
 export class MarkdownFormatter implements Formatter {
   format(data: MediaInfo): string {
     // If it's a game (determined by site or presence of game_info), use game formatter
@@ -13,7 +23,8 @@ export class MarkdownFormatter implements Formatter {
   }
 
   private formatMovie(data: MediaInfo): string {
-    const poster = String(data?.poster || '');
+    // 使用 getPosterUrl 处理海报链接（支持环境变量）
+    const poster = getPosterUrl(data?.poster);
     const trans_title = normalizeMaybeArray(data?.trans_title).trim();
     const this_title = normalizeMaybeArray(data?.this_title).trim();
     const year = String(data?.year || '').trim();
@@ -167,7 +178,8 @@ export class MarkdownFormatter implements Formatter {
   }
 
   private formatGame(data: MediaInfo): string {
-    const poster = String(data?.poster || '');
+    // 使用 getPosterUrl 处理海报链接（支持环境变量）
+    const poster = getPosterUrl(data?.poster);
     const title = data.chinese_title || data.foreign_title;
     const gameInfo = data.game_info || {};
     const extra = (data.extras || data.extra || {}) as MediaExtras;
